@@ -4,7 +4,7 @@ SEARCH_MOSQUES_URL = f"{API_URL_BASE}/mosque/search"
 
 
 def prayer_times_url(mosque_id: int) -> str:
-    return f"{API_URL_BASE}/mosques/{mosque_id}/prayer-times"
+    return f"{API_URL_BASE}/mosque/{mosque_id}/prayer-times"
 
 
 MAX_LOGIN_RETRIES = 20
