@@ -1,12 +1,12 @@
-# MAWAQIT Python Wrapper
+# MAWAQIT Python Library
 
 ‏السلام عليكم ورحمة الله وبركاته
 
-This is the official Python wrapper to access the [MAWAQIT](https://mawaqit.net) API.
+This is the official Python library to access the [MAWAQIT](https://mawaqit.net) API.
 
 ## Installation
 
-To use this Python wrapper, you can install it via pip:
+To use this Python library, you can install it via pip:
 
 ```bash
 pip install mawaqit-py
@@ -19,6 +19,8 @@ pip install mawaqit-py
 `TODO`
 
 ### Asynchroneous version
+
+Here's a simple example of how to use this library:
 
 ```python
 from mawaqit_async import MawaqitClient
