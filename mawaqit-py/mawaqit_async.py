@@ -37,7 +37,6 @@ async def relogin(invocation: dict[str, Any]) -> None:
 
 class MawaqitClient:
     """Interface class for the MAWAQIT official API."""
-
     def __init__(
             self,
             latitude: float = None,
@@ -48,8 +47,7 @@ class MawaqitClient:
             token: str = None,
             session: ClientSession = None,
     ) -> None:
-        """Initialize the client."""
-
+        
         self.username = username
         self.password = password
         self.latitude = latitude
@@ -90,22 +88,18 @@ class MawaqitClient:
     async def all_mosques_neighborhood(self):
         """Get the five nearest mosques from the Client coordinates.
         Returns a list of dicts with info on the mosques."""
-        if self.token is None:
-            token = await self.get_api_token()
-        else:
-            token = self.token
-
+        
         if (self.latitude is None) or (self.longitude is None):
             raise MissingCredentials("Please provide a latitude and a longitude in your MawaqitClient object.")
 
         payload = {
             "lat": self.latitude,
             "lon": self.longitude
-        }
+            }
         headers = {
-            'Authorization': token,
+            'Authorization': self.token,
             'Content-Type': 'application/json',
-        }
+            }
 
         endpoint_url = SEARCH_MOSQUES_URL
 
@@ -113,7 +107,7 @@ class MawaqitClient:
             if response.status != 200:
                 raise NotAuthenticatedException("Authentication failed. Please check your MAWAQIT credentials.")
             data = await response.json()
-
+            
         if len(data) == 0:
             raise NoMosqueAround("No mosque found around your location. Please check your coordinates.")
 
@@ -129,35 +123,34 @@ class MawaqitClient:
         else:
             mosque_id = self.mosque
 
-        if self.token is None:
-            api_token = await self.get_api_token()
-        else:
-            api_token = self.token
-
         headers = {'Content-Type': 'application/json',
-                   'Api-Access-Token': format(api_token)}
+                   'Api-Access-Token': format(self.token)}
 
         endpoint_url = prayer_times_url(mosque_id)
 
         async with self.session.get(endpoint_url, data=None, headers=headers) as response:
             if response.status != 200:
-                raise NotAuthenticatedException("Authentication failed. Please check your MAWAQIT credentials.")
+                raise NotAuthenticatedException("Authentication failed. Please retry. Response.status : " + str(response.status))
             data = await response.json()
+
         return data
 
     async def login(self) -> None:
         """Log into the MAWAQIT website."""
-
+        
         if (self.username is None) or (self.password is None):
             raise MissingCredentials("Please provide a MAWAQIT login and password.")
-
+        
         auth = aiohttp.BasicAuth(self.username, self.password)
 
         endpoint_url = LOGIN_URL
 
         async with await self.session.post(endpoint_url, auth=auth) as response:
-            if response.status != 200:
+            if response.status == 401:
                 raise BadCredentialsException("Authentication failed. Please check your MAWAQIT credentials.")
+            elif response.status != 200:
+                raise NotAuthenticatedException("Authentication failed. Please retry.")
+
             data = await response.text()
 
             self.token = json.loads(data)["apiAccessToken"]
