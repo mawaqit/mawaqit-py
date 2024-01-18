@@ -1,19 +1,18 @@
-"""Python Wrapper to access the MAWAQIT API."""
+"""Python wrapper to access the MAWAQIT API."""
 
 from __future__ import annotations
 import json
 from datetime import date, datetime, timedelta
 from types import TracebackType
 from typing import Any, Dict, List, Union
-
 import backoff
-
 import aiohttp
 from aiohttp import ClientSession
 
-JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
-
 from consts import LOGIN_URL, SEARCH_MOSQUES_URL, prayer_times_url, MAX_LOGIN_RETRIES
+
+
+JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
 
 
 class NotAuthenticatedException(Exception):
