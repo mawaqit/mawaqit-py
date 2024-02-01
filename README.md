@@ -9,39 +9,51 @@ This is the official Python library to access the [MAWAQIT](https://mawaqit.net)
 To use this Python library, you can install it via pip:
 
 ```bash
-pip install mawaqit-py
+pip install mawaqit
 ```
 
 ## Usage
 
 ### Synchroneous version
 
-`TODO`
+`TODO : Not made yet.`
 
 ### Asynchroneous version
 
-Here's a simple example of how to use this library:
+Here's a simple example (with asyncio) on how to use this library.
+You can check the [async_example.py](examples/async_example.py) file to copy this code.
 
 ```python
-from mawaqit_async import MawaqitClient
+import asyncio
+from mawaqit import AsyncMawaqitClient
 
-# Initialize the Mawaqit client:
-# You can pass the username and password as parameters,
-# or directly your valid MAWAQIT API token
-# You can also pass your location (latitude and longitude) as parameters to get the nearest mosques
-client = MawaqitClient(username=USERNAME,
-                       password=PASSWORD,
-                       latitude=LATITUDE,
-                       longitude=LONGITUDE)
 
-# Example: Fetch the API token
-api_token = await client.get_api_token()
+async def main():
+    # Initialize the Mawaqit client:
+    # You can pass the username and password as parameters,
+    # or directly your valid MAWAQIT API token
+    # You can also pass your location (latitude and longitude) as parameters to get the nearest mosques
+    client = AsyncMawaqitClient(username=USERNAME,
+                                password=PASSWORD,
+                                longitude=LONGITUDE,
+                                latitude=LATITUDE)
+    
+    # Get your API token
+    api_token = await client.get_api_token()
 
-# Example: Get information about the five nearest mosques
-nearest_mosques = await client.all_mosques_neighborhood()
+    # Get information of the 5 nearest mosques around the given position (long, lat)
+    mosques = await client.all_mosques_neighborhood()
+    
+    # Set the mosque to use
+    client.mosque = mosques[0]['uuid']
+    
+    # Fetch the prayer times from client.mosque
+    print(client.fetch_prayer_times())
+    
+    await client.close()
 
-# Example: Fetch prayer times for a specific mosque
-prayer_times = await client.fetch_prayer_times()
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Exceptions

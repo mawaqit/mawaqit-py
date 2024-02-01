@@ -9,34 +9,18 @@ import backoff
 import aiohttp
 from aiohttp import ClientSession
 
-from consts import LOGIN_URL, SEARCH_MOSQUES_URL, prayer_times_url, MAX_LOGIN_RETRIES
-
+from .consts import *
 
 JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
-
-
-class NotAuthenticatedException(Exception):
-    pass
-
-
-class BadCredentialsException(Exception):
-    pass
-
-
-class NoMosqueAround(Exception):
-    pass
-
-
-class MissingCredentials(Exception):
-    pass
 
 
 async def relogin(invocation: dict[str, Any]) -> None:
     await invocation["args"][0].login()
 
 
-class MawaqitClient:
-    """Interface class for the MAWAQIT official API."""
+class AsyncMawaqitClient:
+    """Interface async class for the MAWAQIT official API."""
+
     def __init__(
             self,
             latitude: float = None,
@@ -47,7 +31,7 @@ class MawaqitClient:
             token: str = None,
             session: ClientSession = None,
     ) -> None:
-        
+
         self.username = username
         self.password = password
         self.latitude = latitude
@@ -56,7 +40,7 @@ class MawaqitClient:
         self.token = token
         self.session = session if session else ClientSession()
 
-    async def __aenter__(self) -> MawaqitClient:
+    async def __aenter__(self) -> AsyncMawaqitClient:
         return self
 
     async def __aexit__(
@@ -88,18 +72,18 @@ class MawaqitClient:
     async def all_mosques_neighborhood(self):
         """Get the five nearest mosques from the Client coordinates.
         Returns a list of dicts with info on the mosques."""
-        
+
         if (self.latitude is None) or (self.longitude is None):
             raise MissingCredentials("Please provide a latitude and a longitude in your MawaqitClient object.")
 
         payload = {
             "lat": self.latitude,
             "lon": self.longitude
-            }
+        }
         headers = {
             'Authorization': self.token,
             'Content-Type': 'application/json',
-            }
+        }
 
         endpoint_url = SEARCH_MOSQUES_URL
 
@@ -107,7 +91,7 @@ class MawaqitClient:
             if response.status != 200:
                 raise NotAuthenticatedException("Authentication failed. Please check your MAWAQIT credentials.")
             data = await response.json()
-            
+
         if len(data) == 0:
             raise NoMosqueAround("No mosque found around your location. Please check your coordinates.")
 
@@ -130,17 +114,18 @@ class MawaqitClient:
 
         async with self.session.get(endpoint_url, data=None, headers=headers) as response:
             if response.status != 200:
-                raise NotAuthenticatedException("Authentication failed. Please retry. Response.status : " + str(response.status))
+                raise NotAuthenticatedException(
+                    "Authentication failed. Please retry. Response.status : " + str(response.status))
             data = await response.json()
 
         return data
 
     async def login(self) -> None:
         """Log into the MAWAQIT website."""
-        
+
         if (self.username is None) or (self.password is None):
             raise MissingCredentials("Please provide a MAWAQIT login and password.")
-        
+
         auth = aiohttp.BasicAuth(self.username, self.password)
 
         endpoint_url = LOGIN_URL
