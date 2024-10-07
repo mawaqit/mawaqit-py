@@ -22,5 +22,9 @@ class NoMosqueAround(Exception):
     pass
 
 
+class NoMosqueFound(Exception):
+    pass
+
+
 class MissingCredentials(Exception):
     pass

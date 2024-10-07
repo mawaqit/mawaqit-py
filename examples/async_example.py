@@ -13,10 +13,9 @@ async def main():
     # You can pass the username and password as parameters,
     # or directly your valid MAWAQIT API token
     # You can also pass your location (latitude and longitude) as parameters to get the nearest mosques
-    client = AsyncMawaqitClient(username=USERNAME,
-                                password=PASSWORD,
-                                longitude=LONGITUDE,
-                                latitude=LATITUDE)
+    client = AsyncMawaqitClient(
+        username=USERNAME, password=PASSWORD, longitude=LONGITUDE, latitude=LATITUDE
+    )
 
     # Get your API token
     api_token = await client.get_api_token()
@@ -25,10 +24,19 @@ async def main():
     mosques = await client.all_mosques_neighborhood()
 
     # Set the mosque to use
-    client.mosque = mosques[0]['uuid']
+    client.mosque = mosques[0]["uuid"]
 
     # Fetch the prayer times from client.mosque
-    print(client.fetch_prayer_times())
+    print(await client.fetch_prayer_times())
+
+    # Get information of the mosques from the specified keyword
+    mosques = await client.fetch_mosques_by_keyword("test_keyword")
+
+    # Set the mosque to use
+    client.mosque = mosques[0]["uuid"]
+
+    # Fetch the prayer times from client.mosque
+    print(await client.fetch_prayer_times())
 
     await client.close()
 
