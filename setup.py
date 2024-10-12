@@ -5,11 +5,11 @@ with open("README.md", "r", encoding="utf-8") as readme:
 
 setup(
     name="mawaqit",
-    version="0.0.4",
+    version="0.0.5",
     author="MAWAQIT",
     author_email="support@mawaqit.net",
     description="The official MAWAQIT Python wrapper.\n"
-                "Get the data of your mosque (such as name, location, prayer times) from the MAWAQIT API.",
+    "Get the data of your mosque (such as name, location, prayer times) from the MAWAQIT API.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/mawaqit/mawaqit-py",
@@ -23,7 +23,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     packages=find_packages(include=["mawaqit", "mawaqit.*"]),
-    install_requires=['aiohttp>=3.8.0',
-                      'backoff>=2.0.0'],
-    python_requires=">=3.7"
+    install_requires=["aiohttp>=3.8.0", "backoff>=2.0.0"],
+    python_requires=">=3.7",
 )
