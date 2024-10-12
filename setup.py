@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as readme:
 
 setup(
     name="mawaqit",
-    version="0.0.5",
+    version="1.0.0",
     author="MAWAQIT",
     author_email="support@mawaqit.net",
     description="The official MAWAQIT Python wrapper.\n"
