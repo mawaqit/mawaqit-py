@@ -161,6 +161,37 @@ class AsyncMawaqitClient:
 
         return data
 
+    async def fetch_mosque_by_id(self, uuid) -> dict:
+        """Fetch the prayer times calendar for self.mosque,
+        Returns a dict with info on the mosque and the year-calendar prayer times."""
+
+        if uuid is None:
+            raise ValueError("Please provide a mosque uuid.")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Api-Access-Token": format(self.token),
+        }
+
+        endpoint_url = mosque_data_url(uuid)
+
+        async with self.session.get(
+            endpoint_url, data=None, headers=headers
+        ) as response:
+            if response.status == 404:
+                raise NotFoundException(
+                    "Mosque Not found. Please retry. Response.status : "
+                    + str(response.status)
+                )
+            if response.status != 200:
+                raise NotAuthenticatedException(
+                    "Authentication failed. Please retry. Response.status : "
+                    + str(response.status)
+                )
+            data = await response.json()
+
+        return data
+
     async def login(self) -> None:
         """Log into the MAWAQIT website."""
 
