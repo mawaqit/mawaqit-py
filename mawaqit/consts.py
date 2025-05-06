@@ -1,10 +1,16 @@
-API_URL_BASE = "https://mawaqit.net/api/2.0"
-LOGIN_URL = f"{API_URL_BASE}/me"
-SEARCH_MOSQUES_URL = f"{API_URL_BASE}/mosque/search"
+API_URL_BASE = "https://mawaqit.net/api"
+V2 = "2.0"
+V3 = "3.0"
+LOGIN_URL = f"{API_URL_BASE}/{V2}/me"
+SEARCH_MOSQUES_URL = f"{API_URL_BASE}/{V2}/mosque/search"
 
 
 def prayer_times_url(mosque_id: int) -> str:
-    return f"{API_URL_BASE}/mosque/{mosque_id}/prayer-times"
+    return f"{API_URL_BASE}/{V2}/mosque/{mosque_id}/prayer-times"
+
+
+def mosque_data_url(mosque_id: int) -> str:
+    return f"{API_URL_BASE}/{V3}/mosque/{mosque_id}/info"
 
 
 MAX_LOGIN_RETRIES = 20
@@ -23,6 +29,10 @@ class NoMosqueAround(Exception):
 
 
 class NoMosqueFound(Exception):
+    pass
+
+
+class NotFoundException(Exception):
     pass
 
 
