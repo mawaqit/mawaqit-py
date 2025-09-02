@@ -1,11 +1,16 @@
+import os
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as readme:
     long_description = readme.read()
 
+version = os.getenv("VERSION")
+if version is None:
+    raise ValueError("VERSION environment variable is not set")
+
 setup(
     name="mawaqit",
-    version="1.0.6",
+    version=version,
     author="MAWAQIT",
     author_email="support@mawaqit.net",
     description="The official MAWAQIT Python wrapper.\n"
