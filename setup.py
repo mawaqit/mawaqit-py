@@ -28,6 +28,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     packages=find_packages(include=["mawaqit", "mawaqit.*"]),
-    install_requires=["aiohttp>=3.8.0", "backoff>=2.0.0"],
+    install_requires=["aiohttp>=3.8.0"],
     python_requires=">=3.7",
 )
