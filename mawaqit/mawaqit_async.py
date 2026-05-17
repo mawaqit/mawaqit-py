@@ -1,21 +1,17 @@
 """Python wrapper to access the MAWAQIT API."""
 
 from __future__ import annotations
+from asyncio import sleep
 import json
 from datetime import date, datetime, timedelta
 from types import TracebackType
 from typing import Any, Dict, List, Union
-import backoff
 import aiohttp
 from aiohttp import ClientSession
 
 from .consts import *
 
 JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
-
-
-async def relogin(invocation: dict[str, Any]) -> None:
-    await invocation["args"][0].login()
 
 
 class AsyncMawaqitClient:
@@ -54,19 +50,24 @@ class AsyncMawaqitClient:
         """Close the session."""
         await self.session.close()
 
-    @backoff.on_exception(
-        backoff.expo,
-        NotAuthenticatedException,
-        max_tries=MAX_LOGIN_RETRIES,
-        on_backoff=relogin,
-    )
     async def get_api_token(self) -> str:
-        """Get the MAWAQIT API token."""
+        for attempt in range(MAX_LOGIN_RETRIES):
+            try:
+                if not self.token:
+                    await self.login()
 
-        if self.token is None:
-            await self.login()
+                if not self.token:
+                    raise NotAuthenticatedException()
 
-        return self.token
+                return self.token
+
+            except NotAuthenticatedException:
+                self.token = None
+
+                if attempt == MAX_LOGIN_RETRIES - 1:
+                    raise
+
+                await sleep(min(16, 2 ** attempt))
 
     async def _search_mosques(self, params):
         payload = params
