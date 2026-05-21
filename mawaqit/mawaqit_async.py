@@ -111,7 +111,7 @@ class AsyncMawaqitClient:
 
         return data
 
-    async def fetch_mosques_by_keyword(self, keyword) -> dict:
+    async def fetch_mosques_by_keyword(self, keyword, page=1, itemsPerPage=10) -> dict:
         """Get the mosques from the specified keyword.
         Returns a list of dicts with info on the mosques."""
 
@@ -122,6 +122,8 @@ class AsyncMawaqitClient:
 
         payload = {
             "word": keyword,
+            "page": page,
+            "itemsPerPage": itemsPerPage,
         }
 
         data = await self._search_mosques(payload)
