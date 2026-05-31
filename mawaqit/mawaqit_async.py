@@ -3,16 +3,18 @@
 from __future__ import annotations
 from asyncio import sleep
 import json
-from datetime import date, datetime, timedelta
 from types import TracebackType
 from typing import Any, Dict, List, Union
 import aiohttp
 from aiohttp import ClientSession
 
 from .consts import *
+from .utils import prayer_times_url, mosque_data_url
+from .exceptions import BadCredentialsException, NotFoundException, MawaqitException, MissingCredentials, NoMosqueAround
+
+
 
 JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
-
 
 class AsyncMawaqitClient:
     """Interface async class for the MAWAQIT official API."""
@@ -46,27 +48,41 @@ class AsyncMawaqitClient:
     ) -> None:
         await self.close()
 
+    def _raise_for_status(self, response, context: str = "") -> None:
+        """Raise the appropriate exception based on the HTTP status code."""
+        if response.status == 200:
+            return
+        suffix = f" Response.status: {response.status}"
+        if response.status == 401:
+            raise BadCredentialsException(
+                "Authentication failed. Please check your MAWAQIT credentials." + suffix
+            )
+        if response.status == 404:
+            raise NotFoundException(
+                f"{context or 'Resource'} not found." + suffix
+            )
+        raise MawaqitException(
+            f"Unexpected error. Please retry." + suffix
+        )
+
     async def close(self) -> None:
         """Close the session."""
         await self.session.close()
 
     async def get_api_token(self) -> str:
+        """Return a valid API token, retrying on transient login failures."""
+        if self.token:
+            return self.token
+
         for attempt in range(MAX_LOGIN_RETRIES):
             try:
-                if not self.token:
-                    await self.login()
-
-                if not self.token:
-                    raise NotAuthenticatedException()
-
+                await self.login()
                 return self.token
-
-            except NotAuthenticatedException:
-                self.token = None
-
+            except (BadCredentialsException, MissingCredentials):
+                raise
+            except MawaqitException:
                 if attempt == MAX_LOGIN_RETRIES - 1:
                     raise
-
                 await sleep(min(16, 2 ** attempt))
 
     async def _search_mosques(self, params):
@@ -83,10 +99,7 @@ class AsyncMawaqitClient:
         async with self.session.get(
             endpoint_url, params=payload, data=None, headers=headers
         ) as response:
-            if response.status != 200:
-                raise NotAuthenticatedException(
-                    "Authentication failed. Please check your MAWAQIT credentials."
-                )
+            self._raise_for_status(response, context="Mosque")
             data = await response.json()
 
         return data
@@ -104,7 +117,7 @@ class AsyncMawaqitClient:
 
         data = await self._search_mosques(payload)
 
-        if len(data) == 0 or data == None:
+        if len(data) == 0 or data is None:
             raise NoMosqueAround(
                 "No mosque found around your location. Please check your coordinates."
             )
@@ -155,11 +168,7 @@ class AsyncMawaqitClient:
         async with self.session.get(
             endpoint_url, data=None, headers=headers
         ) as response:
-            if response.status != 200:
-                raise NotAuthenticatedException(
-                    "Authentication failed. Please retry. Response.status : "
-                    + str(response.status)
-                )
+            self._raise_for_status(response, context="Mosque")
             data = await response.json()
 
         return data
@@ -181,16 +190,7 @@ class AsyncMawaqitClient:
         async with self.session.get(
             endpoint_url, data=None, headers=headers
         ) as response:
-            if response.status == 404:
-                raise NotFoundException(
-                    "Mosque Not found. Please retry. Response.status : "
-                    + str(response.status)
-                )
-            if response.status != 200:
-                raise NotAuthenticatedException(
-                    "Authentication failed. Please retry. Response.status : "
-                    + str(response.status)
-                )
+            self._raise_for_status(response, context="Mosque")
             data = await response.json()
 
         return data
@@ -206,12 +206,7 @@ class AsyncMawaqitClient:
         endpoint_url = LOGIN_URL
 
         async with await self.session.post(endpoint_url, auth=auth) as response:
-            if response.status == 401:
-                raise BadCredentialsException(
-                    "Authentication failed. Please check your MAWAQIT credentials."
-                )
-            elif response.status != 200:
-                raise NotAuthenticatedException("Authentication failed. Please retry.")
+            self._raise_for_status(response, context="User")
 
             data = await response.text()
 
