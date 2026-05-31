@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Union
 import aiohttp
 from aiohttp import ClientSession
 
-from .consts import *
+from .consts import MAX_LOGIN_RETRIES, SEARCH_MOSQUES_URL, LOGIN_URL
 from .utils import prayer_times_url, mosque_data_url
 from .exceptions import BadCredentialsException, NotFoundException, MawaqitException, MissingCredentials, NoMosqueAround, NoMosqueFound
 
