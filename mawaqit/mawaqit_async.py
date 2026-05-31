@@ -10,7 +10,7 @@ from aiohttp import ClientSession
 
 from .consts import *
 from .utils import prayer_times_url, mosque_data_url
-from .exceptions import BadCredentialsException, NotFoundException, MawaqitException, MissingCredentials, NoMosqueAround
+from .exceptions import BadCredentialsException, NotFoundException, MawaqitException, MissingCredentials, NoMosqueAround, NoMosqueFound
 
 
 
