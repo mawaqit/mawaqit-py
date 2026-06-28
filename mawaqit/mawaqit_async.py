@@ -36,6 +36,9 @@ class AsyncMawaqitClient:
         self.mosque = mosque
         self.token = token
         self.session = session if session else ClientSession()
+        # Only close the session if the client created it, so an injected
+        # (externally owned) session is never closed by this client.
+        self._close_session = session is None
 
     async def __aenter__(self) -> AsyncMawaqitClient:
         return self
@@ -66,8 +69,9 @@ class AsyncMawaqitClient:
         )
 
     async def close(self) -> None:
-        """Close the session."""
-        await self.session.close()
+        """Close the session if it was created by the client."""
+        if self._close_session:
+            await self.session.close()
 
     async def get_api_token(self) -> str:
         """Return a valid API token, retrying on transient login failures."""
