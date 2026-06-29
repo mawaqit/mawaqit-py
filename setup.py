@@ -29,5 +29,5 @@ setup(
     ],
     packages=find_packages(include=["mawaqit", "mawaqit.*"]),
     install_requires=["aiohttp>=3.8.0"],
-    python_requires=">=3.7",
+    python_requires=">=3.10",
 )
