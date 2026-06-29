@@ -35,7 +35,7 @@ class AsyncMawaqitClient:
         self.longitude = longitude
         self.mosque = mosque
         self.token = token
-        self.session = session if session else ClientSession()
+        self.session = session if session is not None else ClientSession()
         # Only close the session if the client created it, so an injected
         # (externally owned) session is never closed by this client.
         self._close_session = session is None

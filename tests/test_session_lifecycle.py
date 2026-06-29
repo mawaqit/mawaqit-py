@@ -52,3 +52,22 @@ def test_context_manager_does_not_close_injected_session():
             await session.close()
 
     asyncio.run(_run())
+
+
+def test_falsy_injected_session_is_not_replaced_or_closed():
+    """A non-None session is kept and never closed, even if it is falsy."""
+
+    class _FalsySession:
+        def __bool__(self):
+            return False
+
+        async def close(self):
+            raise AssertionError("an injected session must not be closed")
+
+    async def _run():
+        session = _FalsySession()
+        client = AsyncMawaqitClient(session=session)
+        assert client.session is session
+        await client.close()
+
+    asyncio.run(_run())
