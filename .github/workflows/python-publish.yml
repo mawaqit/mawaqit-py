@@ -8,10 +8,13 @@ permissions:
   contents: read
 
 jobs:
+  Test:
+    uses: ./.github/workflows/test.yml
+
   Check-Version-Regex:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check version format
         run: |
@@ -26,11 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - Check-Version-Regex
+      - Test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 

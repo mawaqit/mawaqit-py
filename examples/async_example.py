@@ -1,9 +1,9 @@
 import asyncio
 from mawaqit import AsyncMawaqitClient
+import os
 
-
-USERNAME = "YOUR_USERNAME"
-PASSWORD = "YOUR_PASSWORD"
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
 LONGITUDE = 0
 LATITUDE = 0
 
@@ -18,7 +18,7 @@ async def main():
     )
 
     # Get your API token
-    api_token = await client.get_api_token()
+    await client.get_api_token()
 
     # Get information of the 5 nearest mosques around the given position (long, lat)
     mosques = await client.all_mosques_neighborhood()
