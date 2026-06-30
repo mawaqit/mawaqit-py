@@ -4,30 +4,34 @@ from __future__ import annotations
 from asyncio import sleep
 import json
 from types import TracebackType
-from typing import Any, Dict, List, Union
+from typing import Any
 import aiohttp
 from aiohttp import ClientSession
 
 from .consts import MAX_LOGIN_RETRIES, SEARCH_MOSQUES_URL, LOGIN_URL
 from .utils import prayer_times_url, mosque_data_url
-from .exceptions import BadCredentialsException, NotFoundException, MawaqitException, MissingCredentials, NoMosqueAround, NoMosqueFound
+from .exceptions import (
+    BadCredentialsException,
+    NotFoundException,
+    MawaqitException,
+    MissingCredentials,
+    NoMosqueAround,
+    NoMosqueFound,
+)
 
-
-
-JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
 
 class AsyncMawaqitClient:
     """Interface async class for the MAWAQIT official API."""
 
     def __init__(
         self,
-        latitude: float = None,
-        longitude: float = None,
-        mosque: str = None,
-        username: str = None,
-        password: str = None,
-        token: str = None,
-        session: ClientSession = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        mosque: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        token: str | None = None,
+        session: ClientSession | None = None,
     ) -> None:
         self.username = username
         self.password = password
@@ -35,7 +39,10 @@ class AsyncMawaqitClient:
         self.longitude = longitude
         self.mosque = mosque
         self.token = token
-        self.session = session if session else ClientSession()
+        self.session = session if session is not None else ClientSession()
+        # Only close the session if the client created it, so an injected
+        # (externally owned) session is never closed by this client.
+        self._close_session = session is None
 
     async def __aenter__(self) -> AsyncMawaqitClient:
         return self
@@ -48,7 +55,9 @@ class AsyncMawaqitClient:
     ) -> None:
         await self.close()
 
-    def _raise_for_status(self, response, context: str = "") -> None:
+    def _raise_for_status(
+        self, response: aiohttp.ClientResponse, context: str = ""
+    ) -> None:
         """Raise the appropriate exception based on the HTTP status code."""
         if response.status == 200:
             return
@@ -58,53 +67,49 @@ class AsyncMawaqitClient:
                 "Authentication failed. Please check your MAWAQIT credentials." + suffix
             )
         if response.status == 404:
-            raise NotFoundException(
-                f"{context or 'Resource'} not found." + suffix
-            )
-        raise MawaqitException(
-            f"Unexpected error. Please retry." + suffix
-        )
+            raise NotFoundException(f"{context or 'Resource'} not found." + suffix)
+        raise MawaqitException("Unexpected error. Please retry." + suffix)
 
     async def close(self) -> None:
-        """Close the session."""
-        await self.session.close()
+        """Close the session if it was created by the client."""
+        if self._close_session:
+            await self.session.close()
 
     async def get_api_token(self) -> str:
         """Return a valid API token, retrying on transient login failures."""
-        if self.token:
+        if self.token is not None:
             return self.token
 
         for attempt in range(MAX_LOGIN_RETRIES):
             try:
                 await self.login()
-                return self.token
             except (BadCredentialsException, MissingCredentials):
                 raise
             except MawaqitException:
                 if attempt == MAX_LOGIN_RETRIES - 1:
                     raise
-                await sleep(min(16, 2 ** attempt))
+                await sleep(min(16, 2**attempt))
+            else:
+                if self.token is not None:
+                    return self.token
 
-    async def _search_mosques(self, params):
-        payload = params
+        raise MawaqitException("Could not obtain an API token.")  # pragma: no cover
+
+    async def _search_mosques(self, params: dict[str, Any]) -> list[dict[str, Any]]:
         headers = {
-            "Authorization": self.token,
+            "Authorization": format(self.token),
             "Content-Type": "application/json",
         }
 
-        endpoint_url = SEARCH_MOSQUES_URL
-
-        data = None
-
         async with self.session.get(
-            endpoint_url, params=payload, data=None, headers=headers
+            SEARCH_MOSQUES_URL, params=params, data=None, headers=headers
         ) as response:
             self._raise_for_status(response, context="Mosque")
-            data = await response.json()
+            data: list[dict[str, Any]] = await response.json()
 
         return data
 
-    async def all_mosques_neighborhood(self):
+    async def all_mosques_neighborhood(self) -> list[dict[str, Any]]:
         """Get the five nearest mosques from the Client coordinates.
         Returns a list of dicts with info on the mosques."""
 
@@ -117,14 +122,16 @@ class AsyncMawaqitClient:
 
         data = await self._search_mosques(payload)
 
-        if len(data) == 0 or data is None:
+        if not data:
             raise NoMosqueAround(
                 "No mosque found around your location. Please check your coordinates."
             )
 
         return data
 
-    async def fetch_mosques_by_keyword(self, keyword, page=1, itemsPerPage=10) -> dict:
+    async def fetch_mosques_by_keyword(
+        self, keyword: str | None, page: int = 1, items_per_page: int = 10
+    ) -> list[dict[str, Any]]:
         """Get the mosques from the specified keyword.
         Returns a list of dicts with info on the mosques."""
 
@@ -136,25 +143,25 @@ class AsyncMawaqitClient:
         payload = {
             "word": keyword,
             "page": page,
-            "itemsPerPage": itemsPerPage,
+            "itemsPerPage": items_per_page,
         }
 
         data = await self._search_mosques(payload)
 
-        if len(data) == 0 or data is None:
+        if not data:
             raise NoMosqueFound(
                 "No mosque found with the keyword. Please check with another keyword"
             )
 
         return data
 
-    async def fetch_prayer_times(self) -> dict:
+    async def fetch_prayer_times(self) -> dict[str, Any]:
         """Fetch the prayer times calendar for self.mosque,
         Returns a dict with info on the mosque and the year-calendar prayer times."""
 
         if self.mosque is None:
-            mosque_id = await self.all_mosques_neighborhood()
-            mosque_id = mosque_id[0]["uuid"]
+            mosques = await self.all_mosques_neighborhood()
+            mosque_id: str = mosques[0]["uuid"]
         else:
             mosque_id = self.mosque
 
@@ -169,11 +176,11 @@ class AsyncMawaqitClient:
             endpoint_url, data=None, headers=headers
         ) as response:
             self._raise_for_status(response, context="Mosque")
-            data = await response.json()
+            data: dict[str, Any] = await response.json()
 
         return data
 
-    async def fetch_mosque_by_id(self, uuid) -> dict:
+    async def fetch_mosque_by_id(self, uuid: str | None) -> dict[str, Any]:
         """Fetch the prayer times calendar for self.mosque,
         Returns a dict with info on the mosque and the year-calendar prayer times."""
 
@@ -191,7 +198,7 @@ class AsyncMawaqitClient:
             endpoint_url, data=None, headers=headers
         ) as response:
             self._raise_for_status(response, context="Mosque")
-            data = await response.json()
+            data: dict[str, Any] = await response.json()
 
         return data
 
