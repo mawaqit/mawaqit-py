@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Run the test suite (with the 100% coverage gate) before pushing.
+# Enable once with: git config core.hooksPath .githooks
+
+echo "Running tests before push..."
+if ! python -m pytest; then
+    echo
+    echo "Tests failed — push aborted."
+    echo "Fix the tests, or bypass with: git push --no-verify"
+    exit 1
+fi
