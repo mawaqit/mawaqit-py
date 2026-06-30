@@ -4,7 +4,7 @@ from __future__ import annotations
 from asyncio import sleep
 import json
 from types import TracebackType
-from typing import Any, Dict, List, Union
+from typing import Any
 import aiohttp
 from aiohttp import ClientSession
 
@@ -18,9 +18,6 @@ from .exceptions import (
     NoMosqueAround,
     NoMosqueFound,
 )
-
-
-JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
 
 
 class AsyncMawaqitClient:
@@ -58,7 +55,9 @@ class AsyncMawaqitClient:
     ) -> None:
         await self.close()
 
-    def _raise_for_status(self, response, context: str = "") -> None:
+    def _raise_for_status(
+        self, response: aiohttp.ClientResponse, context: str = ""
+    ) -> None:
         """Raise the appropriate exception based on the HTTP status code."""
         if response.status == 200:
             return
@@ -96,26 +95,21 @@ class AsyncMawaqitClient:
 
         raise MawaqitException("Could not obtain an API token.")  # pragma: no cover
 
-    async def _search_mosques(self, params):
-        payload = params
+    async def _search_mosques(self, params: dict[str, Any]) -> list[dict[str, Any]]:
         headers = {
-            "Authorization": self.token,
+            "Authorization": format(self.token),
             "Content-Type": "application/json",
         }
 
-        endpoint_url = SEARCH_MOSQUES_URL
-
-        data = None
-
         async with self.session.get(
-            endpoint_url, params=payload, data=None, headers=headers
+            SEARCH_MOSQUES_URL, params=params, data=None, headers=headers
         ) as response:
             self._raise_for_status(response, context="Mosque")
-            data = await response.json()
+            data: list[dict[str, Any]] = await response.json()
 
         return data
 
-    async def all_mosques_neighborhood(self):
+    async def all_mosques_neighborhood(self) -> list[dict[str, Any]]:
         """Get the five nearest mosques from the Client coordinates.
         Returns a list of dicts with info on the mosques."""
 
@@ -128,14 +122,16 @@ class AsyncMawaqitClient:
 
         data = await self._search_mosques(payload)
 
-        if len(data) == 0 or data is None:
+        if not data:
             raise NoMosqueAround(
                 "No mosque found around your location. Please check your coordinates."
             )
 
         return data
 
-    async def fetch_mosques_by_keyword(self, keyword, page=1, itemsPerPage=10) -> dict:
+    async def fetch_mosques_by_keyword(
+        self, keyword: str | None, page: int = 1, itemsPerPage: int = 10
+    ) -> list[dict[str, Any]]:
         """Get the mosques from the specified keyword.
         Returns a list of dicts with info on the mosques."""
 
@@ -152,20 +148,20 @@ class AsyncMawaqitClient:
 
         data = await self._search_mosques(payload)
 
-        if len(data) == 0 or data is None:
+        if not data:
             raise NoMosqueFound(
                 "No mosque found with the keyword. Please check with another keyword"
             )
 
         return data
 
-    async def fetch_prayer_times(self) -> dict:
+    async def fetch_prayer_times(self) -> dict[str, Any]:
         """Fetch the prayer times calendar for self.mosque,
         Returns a dict with info on the mosque and the year-calendar prayer times."""
 
         if self.mosque is None:
-            mosque_id = await self.all_mosques_neighborhood()
-            mosque_id = mosque_id[0]["uuid"]
+            mosques = await self.all_mosques_neighborhood()
+            mosque_id: str = mosques[0]["uuid"]
         else:
             mosque_id = self.mosque
 
@@ -180,11 +176,11 @@ class AsyncMawaqitClient:
             endpoint_url, data=None, headers=headers
         ) as response:
             self._raise_for_status(response, context="Mosque")
-            data = await response.json()
+            data: dict[str, Any] = await response.json()
 
         return data
 
-    async def fetch_mosque_by_id(self, uuid) -> dict:
+    async def fetch_mosque_by_id(self, uuid: str | None) -> dict[str, Any]:
         """Fetch the prayer times calendar for self.mosque,
         Returns a dict with info on the mosque and the year-calendar prayer times."""
 
@@ -202,7 +198,7 @@ class AsyncMawaqitClient:
             endpoint_url, data=None, headers=headers
         ) as response:
             self._raise_for_status(response, context="Mosque")
-            data = await response.json()
+            data: dict[str, Any] = await response.json()
 
         return data
 
