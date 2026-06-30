@@ -58,12 +58,14 @@ All inherit from `MawaqitException`:
 [Fork](https://github.com/mawaqit/mawaqit-py/fork) the repo and open a pull request, or open an [issue](https://github.com/mawaqit/mawaqit-py/issues/new).
 
 ```bash
-pip install -r requirements-test.txt   # test dependencies
-pytest                                  # full suite (must stay at 100% coverage)
+pip install -r requirements-test.txt   # dev dependencies
+ruff check . && ruff format --check .   # lint + format
+mypy                                    # type check
+pytest                                  # tests (must stay at 100% coverage)
 pytest tests/test_client.py::test_keyword_success --no-cov   # a single test
 ```
 
-Enable the pre-push hook to run tests automatically before each push:
+Enable the pre-push hook to run lint, type checks, and tests before each push:
 
 ```bash
 git config core.hooksPath .githooks

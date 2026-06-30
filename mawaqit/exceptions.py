@@ -1,6 +1,7 @@
 class MawaqitException(Exception):
     """Base exception for all Mawaqit errors."""
 
+
 class NotAuthenticatedException(MawaqitException):
     pass
 

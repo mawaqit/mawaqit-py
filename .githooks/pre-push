@@ -1,11 +1,19 @@
 #!/usr/bin/env sh
-# Run the test suite (with the 100% coverage gate) before pushing.
+# Run lint, type checks, and tests before pushing.
 # Enable once with: git config core.hooksPath .githooks
 
-echo "Running tests before push..."
-if ! python -m pytest; then
-    echo
-    echo "Tests failed — push aborted."
-    echo "Fix the tests, or bypass with: git push --no-verify"
-    exit 1
-fi
+run() {
+    label=$1
+    shift
+    echo "→ $label"
+    if ! "$@"; then
+        echo
+        echo "Pre-push check failed ($label). Fix it, or bypass with: git push --no-verify"
+        exit 1
+    fi
+}
+
+run "Ruff lint"   ruff check .
+run "Ruff format" ruff format --check .
+run "Mypy"        mypy
+run "Tests"       pytest

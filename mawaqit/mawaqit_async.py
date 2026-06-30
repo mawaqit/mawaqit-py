@@ -10,24 +10,31 @@ from aiohttp import ClientSession
 
 from .consts import MAX_LOGIN_RETRIES, SEARCH_MOSQUES_URL, LOGIN_URL
 from .utils import prayer_times_url, mosque_data_url
-from .exceptions import BadCredentialsException, NotFoundException, MawaqitException, MissingCredentials, NoMosqueAround, NoMosqueFound
-
+from .exceptions import (
+    BadCredentialsException,
+    NotFoundException,
+    MawaqitException,
+    MissingCredentials,
+    NoMosqueAround,
+    NoMosqueFound,
+)
 
 
 JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
+
 
 class AsyncMawaqitClient:
     """Interface async class for the MAWAQIT official API."""
 
     def __init__(
         self,
-        latitude: float = None,
-        longitude: float = None,
-        mosque: str = None,
-        username: str = None,
-        password: str = None,
-        token: str = None,
-        session: ClientSession = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        mosque: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        token: str | None = None,
+        session: ClientSession | None = None,
     ) -> None:
         self.username = username
         self.password = password
@@ -61,12 +68,8 @@ class AsyncMawaqitClient:
                 "Authentication failed. Please check your MAWAQIT credentials." + suffix
             )
         if response.status == 404:
-            raise NotFoundException(
-                f"{context or 'Resource'} not found." + suffix
-            )
-        raise MawaqitException(
-            f"Unexpected error. Please retry." + suffix
-        )
+            raise NotFoundException(f"{context or 'Resource'} not found." + suffix)
+        raise MawaqitException("Unexpected error. Please retry." + suffix)
 
     async def close(self) -> None:
         """Close the session if it was created by the client."""
@@ -75,19 +78,23 @@ class AsyncMawaqitClient:
 
     async def get_api_token(self) -> str:
         """Return a valid API token, retrying on transient login failures."""
-        if self.token:
+        if self.token is not None:
             return self.token
 
         for attempt in range(MAX_LOGIN_RETRIES):
             try:
                 await self.login()
-                return self.token
             except (BadCredentialsException, MissingCredentials):
                 raise
             except MawaqitException:
                 if attempt == MAX_LOGIN_RETRIES - 1:
                     raise
-                await sleep(min(16, 2 ** attempt))
+                await sleep(min(16, 2**attempt))
+            else:
+                if self.token is not None:
+                    return self.token
+
+        raise MawaqitException("Could not obtain an API token.")  # pragma: no cover
 
     async def _search_mosques(self, params):
         payload = params
