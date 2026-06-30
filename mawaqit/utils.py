@@ -1,11 +1,9 @@
-from .consts import API_URL_BASE,V2, V3
+from .consts import API_URL_BASE, V2, V3
 
 
-def prayer_times_url(mosque_id: int) -> str:
+def prayer_times_url(mosque_id: str) -> str:
     return f"{API_URL_BASE}/{V2}/mosque/{mosque_id}/prayer-times"
 
 
-def mosque_data_url(mosque_id: int) -> str:
+def mosque_data_url(mosque_id: str) -> str:
     return f"{API_URL_BASE}/{V3}/mosque/{mosque_id}/info"
-
-

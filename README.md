@@ -2,11 +2,15 @@
 
 ‏السلام عليكم ورحمة الله وبركاته
 
-This is the official Python library to access the [MAWAQIT](https://mawaqit.net) API.
+Official async Python client for the [MAWAQIT](https://mawaqit.net) API — fetch mosque information and prayer times.
+
+## Getting an API token
+
+1. Create a free account on [mawaqit.net](https://mawaqit.net).
+2. The client logs in with your email and password and obtains an API token for you (`get_api_token()`).
+3. Already have a token? Pass it directly with `token=...` and skip the login.
 
 ## Installation
-
-To use this Python library, you can install it via pip:
 
 ```bash
 pip install mawaqit
@@ -14,76 +18,65 @@ pip install mawaqit
 
 ## Usage
 
-### Synchroneous version
-
-`TODO : Not made yet.`
-
-### Asynchroneous version
-
-Here's a simple example (with asyncio) on how to use this library.
-You can check the [async_example.py](examples/async_example.py) file to copy this code.
-
 ```python
 import asyncio
 from mawaqit import AsyncMawaqitClient
 
 
 async def main():
-   # Initialize the Mawaqit client:
-    # You can pass the username and password as parameters,
-    # or directly your valid MAWAQIT API token
-    # You can also pass your location (latitude and longitude) as parameters to get the nearest mosques
     client = AsyncMawaqitClient(
-        username=USERNAME, password=PASSWORD, longitude=LONGITUDE, latitude=LATITUDE
+        username=USERNAME, password=PASSWORD, latitude=LATITUDE, longitude=LONGITUDE
     )
+    await client.get_api_token()
 
-    # Get your API token
-    api_token = await client.get_api_token()
-
-    # Get information of the 5 nearest mosques around the given position (long, lat)
+    # Find mosques near the coordinates, then pick one:
     mosques = await client.all_mosques_neighborhood()
-
-    # Set the mosque to use
     client.mosque = mosques[0]["uuid"]
+    # Or search by keyword: await client.fetch_mosques_by_keyword("paris")
 
-    # Fetch the prayer times from client.mosque
     print(await client.fetch_prayer_times())
-
-    # Get information of the mosques from the specified keyword
-    mosques = await client.fetch_mosques_by_keyword("test_keyword")
-
-    # Set the mosque to use
-    client.mosque = mosques[0]["uuid"]
-
-    # Fetch the prayer times from client.mosque
-    print(await client.fetch_prayer_times())
-
     await client.close()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+
+asyncio.run(main())
 ```
+
+Full example: [examples/async_example.py](examples/async_example.py).
 
 ## Exceptions
 
-- `NotAuthenticatedException`: Raised when authentication fails.
-- `BadCredentialsException`: Raised when login credentials are incorrect.
-- `NoMosqueAround`: Raised when no mosques are found around the specified location.
-- `NoMosqueFound`: Raised when no mosques are found using the specified keyword.
-- `MissingCredentials`: Raised when required credentials are not provided.
+All inherit from `MawaqitException`:
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- `BadCredentialsException` — wrong login credentials.
+- `MissingCredentials` — required credentials not provided.
+- `NoMosqueAround` — no mosque near the given location.
+- `NoMosqueFound` — no mosque matches the keyword.
+- `NotFoundException` — resource not found.
 
 ## Contributing
 
-If you want to contribute to this project, feel free to [fork](https://github.com/mawaqit/mawaqit-py/fork) it and submit a pull request.
+[Fork](https://github.com/mawaqit/mawaqit-py/fork) the repo and open a pull request, or open an [issue](https://github.com/mawaqit/mawaqit-py/issues/new).
 
-You can also open an [issue](https://github.com/mawaqit/mawaqit-py/issues/new) if you find any bug or have any suggestion.
+```bash
+pip install -r requirements-test.txt   # dev dependencies
+ruff check . && ruff format --check .   # lint + format
+mypy                                    # type check
+pytest                                  # tests (must stay at 100% coverage)
+pytest tests/test_client.py::test_keyword_success --no-cov   # a single test
+```
+
+Enable the pre-push hook to run lint, type checks, and tests before each push:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+HTTP is tested with an injected fake session (see `tests/test_client.py`), not by mocking aiohttp — follow that pattern for new tests.
+
+## License
+
+Released under the license in the [LICENSE](LICENSE) file.
 
 ## Questions
 
-If you have any question, feel free to contact us at [support@mawaqit.net](mailto:support@mawaqit.net).
-
-## May Allah reward you!
+Reach us at [support@mawaqit.net](mailto:support@mawaqit.net). May Allah reward you!
