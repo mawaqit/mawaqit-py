@@ -2,7 +2,10 @@ name: Tests
 
 on:
   push:
+  # Only on open/reopen: new commits to a PR branch are already covered by the
+  # push event above, so this avoids running the suite twice per commit.
   pull_request:
+    types: [opened, reopened]
   workflow_call:
 
 jobs:
