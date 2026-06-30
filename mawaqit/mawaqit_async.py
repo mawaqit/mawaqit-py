@@ -130,7 +130,7 @@ class AsyncMawaqitClient:
         return data
 
     async def fetch_mosques_by_keyword(
-        self, keyword: str | None, page: int = 1, itemsPerPage: int = 10
+        self, keyword: str | None, page: int = 1, items_per_page: int = 10
     ) -> list[dict[str, Any]]:
         """Get the mosques from the specified keyword.
         Returns a list of dicts with info on the mosques."""
@@ -143,7 +143,7 @@ class AsyncMawaqitClient:
         payload = {
             "word": keyword,
             "page": page,
-            "itemsPerPage": itemsPerPage,
+            "itemsPerPage": items_per_page,
         }
 
         data = await self._search_mosques(payload)
