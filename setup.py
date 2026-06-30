@@ -26,8 +26,10 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
+        "Typing :: Typed",
     ],
     packages=find_packages(include=["mawaqit", "mawaqit.*"]),
+    package_data={"mawaqit": ["py.typed"]},
     install_requires=["aiohttp>=3.8.0"],
     python_requires=">=3.7",
 )
