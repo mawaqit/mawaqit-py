@@ -1,8 +1,0 @@
-# Ruff configuration — https://docs.astral.sh/ruff/
-line-length = 88
-
-[lint]
-# pycodestyle errors (E) and pyflakes (F). Extend over time (e.g. I, UP, B).
-select = ["E", "F"]
-# Line length is enforced by `ruff format`; ignore E501 for unsplittable strings.
-ignore = ["E501"]

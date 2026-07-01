@@ -8,3 +8,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+site/
+
+# Generated code — rebuilt locally (pre-commit) and in CI/build, never committed.
+mawaqit/_generated/
+mawaqit/_sync/
