@@ -1,5 +1,36 @@
-# Welcome to the MAWAQIT official API.
+"""The official MAWAQIT API wrapper.
 
-from .mawaqit_async import AsyncMawaqitClient
+Two clients with an identical, version-namespaced surface:
 
-__all__ = ["AsyncMawaqitClient"]
+    from mawaqit import AsyncMawaqitClient, MawaqitClient
+
+    async with AsyncMawaqitClient(token="...") as client:
+        times = await client.v3.mosque.times(uuid)
+
+    with MawaqitClient(token="...") as client:
+        times = client.v3.mosque.times(uuid)
+
+The sync client is generated from the async one by unasync, so the two never
+drift. Reach each API version through ``client.v2`` / ``client.v3``.
+"""
+
+from ._async import AsyncMawaqitClient
+from ._sync import MawaqitClient
+from .config import Environment, MawaqitSettings
+from .exceptions import (
+    BadCredentialsException,
+    MawaqitException,
+    MissingCredentials,
+    NotFoundException,
+)
+
+__all__ = [
+    "AsyncMawaqitClient",
+    "MawaqitClient",
+    "MawaqitSettings",
+    "Environment",
+    "MawaqitException",
+    "BadCredentialsException",
+    "NotFoundException",
+    "MissingCredentials",
+]

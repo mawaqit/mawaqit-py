@@ -1,26 +1,17 @@
+"""Exception hierarchy — every error subclasses :class:`MawaqitException`."""
+
+
 class MawaqitException(Exception):
-    """Base exception for all Mawaqit errors."""
-
-
-class NotAuthenticatedException(MawaqitException):
-    pass
+    """Base exception for all MAWAQIT errors."""
 
 
 class BadCredentialsException(MawaqitException):
-    pass
-
-
-class NoMosqueAround(MawaqitException):
-    pass
-
-
-class NoMosqueFound(MawaqitException):
-    pass
+    """Authentication was rejected by the API (HTTP 401)."""
 
 
 class NotFoundException(MawaqitException):
-    pass
+    """The requested resource does not exist (HTTP 404)."""
 
 
 class MissingCredentials(MawaqitException):
-    pass
+    """A token or username/password is required but was not provided."""

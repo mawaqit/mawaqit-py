@@ -123,7 +123,11 @@ testpaths = ["tests"]
 addopts = "--cov=mawaqit --cov-report=term-missing --cov-fail-under=100"
 
 [tool.coverage.run]
-omit = ["mawaqit/_generated/*"]
+# Generated trees are excluded from the line-coverage gate: the async client is
+# the 100%-covered source of truth, the models are validated by pydantic + the
+# contract tests, and the unasync-derived sync client is verified by a dedicated
+# smoke suite (test_sync.py) rather than re-hitting every mirrored line.
+omit = ["mawaqit/_generated/*", "mawaqit/_sync/*"]
 
 [tool.coverage.report]
 exclude_also = ["if TYPE_CHECKING:", "@overload"]
