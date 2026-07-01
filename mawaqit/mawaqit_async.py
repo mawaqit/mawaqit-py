@@ -1,23 +1,25 @@
 """Python wrapper to access the MAWAQIT API."""
 
 from __future__ import annotations
-from asyncio import sleep
+
 import json
+from asyncio import sleep
 from types import TracebackType
 from typing import Any
+
 import aiohttp
 from aiohttp import ClientSession
 
-from .consts import MAX_LOGIN_RETRIES, SEARCH_MOSQUES_URL, LOGIN_URL
-from .utils import prayer_times_url, mosque_data_url
+from .consts import LOGIN_URL, MAX_LOGIN_RETRIES, SEARCH_MOSQUES_URL
 from .exceptions import (
     BadCredentialsException,
-    NotFoundException,
     MawaqitException,
     MissingCredentials,
     NoMosqueAround,
     NoMosqueFound,
+    NotFoundException,
 )
+from .utils import mosque_data_url, prayer_times_url
 
 
 class AsyncMawaqitClient:

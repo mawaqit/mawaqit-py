@@ -1,6 +1,0 @@
-aiohttp
-mypy
-pytest
-pytest-asyncio
-pytest-cov
-ruff

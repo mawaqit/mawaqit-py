@@ -1,6 +1,7 @@
 import asyncio
-from mawaqit import AsyncMawaqitClient
 import os
+
+from mawaqit import AsyncMawaqitClient
 
 USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")

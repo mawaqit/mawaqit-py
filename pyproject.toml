@@ -1,0 +1,129 @@
+[build-system]
+# Model/sync generation runs inside the build (see hatch_build.py), so the
+# generators must be available in the isolated build environment.
+requires = ["hatchling", "datamodel-code-generator>=0.25", "unasync>=0.6"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mawaqit"
+dynamic = ["version"]
+description = "The official async + sync Python wrapper for the MAWAQIT API (v2 and v3)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "MAWAQIT", email = "support@mawaqit.net" }]
+keywords = ["mawaqit", "mosque", "prayer-times", "api", "async"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.27",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+]
+
+[project.urls]
+Homepage = "https://mawaqit.net"
+Repository = "https://github.com/mawaqit/mawaqit-py"
+"Bug Tracker" = "https://github.com/mawaqit/mawaqit-py/issues"
+
+[project.optional-dependencies]
+# Everything needed to (re)generate the gitignored code from the swagger specs.
+codegen = [
+    "datamodel-code-generator>=0.25",
+    "unasync>=0.6",
+]
+test = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5",
+    "respx>=0.21",
+    "schemathesis>=3.29",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+]
+dev = [
+    "mawaqit[codegen,test,docs]",
+    "mypy>=1.8",
+    "ruff>=0.6",
+    "pre-commit>=3.5",
+    "build>=1.2",
+]
+
+# --------------------------------------------------------------------------- #
+# Build: version + generated-code handling
+# --------------------------------------------------------------------------- #
+# Version comes from the VERSION env var (set to the release tag in CI, aligned
+# to the newest supported API version). Falls back to 0.0.0 for local/editable
+# installs. Implemented as a custom source in hatch_build.py.
+[tool.hatch.version]
+source = "custom"
+
+# Custom build hook (hatch_build.py) regenerates mawaqit/_generated and
+# mawaqit/_sync before the wheel/sdist is assembled.
+[tool.hatch.build.hooks.custom]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mawaqit"]
+# The generated packages are gitignored, so Hatch's VCS file-discovery skips
+# them. Force them into the artifact explicitly, otherwise the published wheel
+# is broken on install.
+artifacts = [
+    "mawaqit/_generated/**/*.py",
+    "mawaqit/_sync/**/*.py",
+]
+
+[tool.hatch.build.targets.sdist]
+# Ship the specs + generation entrypoint so the sdist can rebuild from source.
+include = [
+    "mawaqit",
+    "scripts",
+    "swagger",
+    "hatch_build.py",
+    "README.md",
+]
+artifacts = [
+    "mawaqit/_generated/**/*.py",
+    "mawaqit/_sync/**/*.py",
+]
+
+# --------------------------------------------------------------------------- #
+# Tooling
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+line-length = 88
+# Generated code is mechanically derived and validated by the test suite +
+# pydantic at runtime; it is not gated by the linter to avoid churn.
+extend-exclude = ["mawaqit/_generated", "mawaqit/_sync"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length is owned by the formatter
+
+[tool.mypy]
+python_version = "3.10"
+files = ["mawaqit"]
+strict = true
+
+[[tool.mypy.overrides]]
+# datamodel-code-generator output is not authored by us; its types are consumed
+# strictly by the hand-written code, but the modules themselves are not gated.
+module = ["mawaqit._generated.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--cov=mawaqit --cov-report=term-missing --cov-fail-under=100"
+
+[tool.coverage.run]
+omit = ["mawaqit/_generated/*"]
+
+[tool.coverage.report]
+exclude_also = ["if TYPE_CHECKING:", "@overload"]
