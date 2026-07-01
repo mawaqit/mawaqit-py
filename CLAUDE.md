@@ -4,51 +4,82 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`mawaqit-py` is the official async Python client for the [MAWAQIT](https://mawaqit.net) API. The entire public surface is a single class, `AsyncMawaqitClient`, exported from the `mawaqit` package. It fetches mosque information and prayer times over HTTP using `aiohttp`.
+`mawaqit-py` is the official Python client for the [MAWAQIT](https://mawaqit.net) API. It exposes
+two clients with an identical, version-namespaced surface — `AsyncMawaqitClient` (async, for Home
+Assistant and other async consumers) and `MawaqitClient` (sync, for scripts/notebooks) — both
+exported from the `mawaqit` package. The **v2 and v3** APIs are reachable side by side via
+`client.v2.<resource>.<op>()` and `client.v3....`. HTTP is `httpx`; models are `pydantic` v2.
+
+The core principle is **derive, don't duplicate**: types are generated from the real swagger specs
+and the sync client is generated from the async source, so nothing is typed or maintained twice.
+
+## Generated code (important)
+
+Two trees are **gitignored** and rebuilt from source — never edit them by hand, and never commit them:
+
+- `mawaqit/_generated/v2.py`, `v3.py` — pydantic models from `swagger/{2.0,3.0}.yml`
+  (`datamodel-code-generator`, one module per API version).
+- `mawaqit/_sync/` — the sync client, transformed from `mawaqit/_async/` by `unasync`.
+
+Regenerate both with `python scripts/generate.py`. It also runs in the Hatch build hook
+(`hatch_build.py`), the CI test/lint jobs, pre-commit, and the pre-push hook. To add an endpoint or a
+new API version, edit only `mawaqit/_async/` (and `scripts/generate.py` for a new version), then
+regenerate — see the README's "Extending" section.
 
 ## Commands
 
-Tests (configuration lives in `pytest.ini`, `asyncio_mode = auto`):
-
 ```bash
-pip install -r requirements-test.txt
-pytest                       # full suite; enforces 100% coverage
+pip install -e ".[dev]"        # install with all dev/test/docs/codegen extras
+python scripts/generate.py     # (re)build the gitignored generated trees — required before tests
+pytest                         # full suite; enforces 100% coverage on hand-written code
+ruff check . && ruff format --check .
+mypy                           # strict; also type-checks the generated sync tree
+mkdocs serve                   # docs (needs generated code present)
 ```
 
-- **Coverage is gated at 100%** via `--cov-fail-under=100` in `pytest.ini`. Any new code path must be covered or `pytest` fails.
-- Because coverage is in `addopts`, running a subset trips the gate. To run a single test, disable coverage for that run:
+- **Coverage is gated at 100%** (`--cov-fail-under=100` in `pyproject.toml`), scoped to hand-written
+  code — both generated trees are omitted. The async client is the source of truth and stays at 100%;
+  the sync client is covered by a smoke suite (`tests/test_sync.py`).
+- Because coverage is in `addopts`, run a single test with `--no-cov`:
+  `pytest tests/test_async_core.py::test_login_success_caches_token --no-cov`.
 
-  ```bash
-  pytest tests/test_client.py::test_keyword_success --no-cov
-  ```
-
-Lint, format, and type checks (configured in `ruff.toml` and `mypy.ini`):
-
-```bash
-ruff check . && ruff format --check .   # lint + format (format owns line length)
-mypy                                     # types (scoped to mawaqit/)
-```
-
-Build / editable install — `setup.py` reads the version from the **`VERSION` environment variable** and raises if it is unset, so it is required:
+Build (version comes from the `VERSION` env var, defaulting to `0.0.0` locally):
 
 ```bash
-VERSION=0.0.0 pip install -e .      # local dev install
-VERSION=1.2.3 python -m build       # build sdist/wheel
+VERSION=3.0.0 python -m build      # build hook regenerates + force-includes generated code
 ```
 
 ## Architecture
 
-- **`mawaqit/mawaqit_async.py` is the library.** `AsyncMawaqitClient` holds all HTTP logic; the other modules are thin support: `consts.py` (API URLs, `MAX_LOGIN_RETRIES`), `utils.py` (URL builders), `exceptions.py` (every error subclasses `MawaqitException`).
-- **`mawaqit/mawaqit.py` is an unfinished synchronous stub** — not exported, not used. Do not build on it.
-- **Authentication.** Data calls need an API token. `get_api_token()` returns an existing token or calls `login()` (HTTP Basic auth against `LOGIN_URL`), retrying transient `MawaqitException`s up to `MAX_LOGIN_RETRIES` with exponential backoff. The token is then sent as the `Api-Access-Token` header on subsequent requests.
-- **Status-to-exception mapping** is centralized in `_raise_for_status`: 401 → `BadCredentialsException`, 404 → `NotFoundException`, any other non-200 → `MawaqitException`.
-- **Mosque selection.** `fetch_prayer_times()` uses `client.mosque` (a uuid) when set, otherwise falls back to the nearest mosque from the client's `latitude`/`longitude`. Mosques are discovered with `all_mosques_neighborhood()` (coordinates) or `fetch_mosques_by_keyword()`.
-- **Session ownership (subtle, important).** The client accepts an injected `aiohttp.ClientSession`. Ownership is tracked with `_close_session = session is None`, and `close()` only closes a session the client created itself — an injected session is caller-owned and never closed. Keep the session assignment and this flag consistent (both keyed on `is None`). This is what lets consumers such as the Home Assistant integration share a single session.
+- **`mawaqit/_async/` is the hand-written source of truth.** `client.py` holds the transport, auth,
+  and cached `.v2`/`.v3` namespace properties; `v2.py`/`v3.py` hold thin, typed resource methods
+  (build path/params → `self._client._request(...)` → parse into the generated model).
+- **Shared, non-transformed modules** live at `mawaqit/` top-level: `config.py` (pydantic-settings,
+  environments), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
+  `API_TOKEN_HEADER` — httpx uses one `Response` type for sync and async, so these are written once),
+  and `responses.py` (the one inline-schema response model).
+- **Authentication is centralized** on the root client: a single token (passed directly or obtained
+  via basic-auth login against `/2.0/me`, with retry/backoff) is shared by v2 and v3 and sent as the
+  `Api-Access-Token` header. Only 2xx pass; 401→`BadCredentialsException`, 404→`NotFoundException`,
+  other→`MawaqitException`.
+- **Session ownership (subtle).** The client accepts an injected `httpx.(Async)Client`; ownership is
+  tracked with `_close_http = http_client is None`, and `close()` only closes a client we created.
+  URLs are built absolutely from the resolved base URL, so an injected client is used untouched —
+  this is what lets Home Assistant share one client.
+- **Adding a v4** is additive: new spec + `_async/v4.py` + a `.v4` property; nothing existing is rewritten.
 
 ## Testing approach
 
-HTTP is tested by **injecting a fake session** (`FakeSession` / `FakeResponse` in `tests/test_client.py`), not by mocking `aiohttp` at the transport level — `aioresponses` is incompatible with aiohttp 3.14+. New request-level tests should follow this fake-session pattern. Async tests are plain `async def` (pytest-asyncio auto mode).
+HTTP is mocked with **respx** (no real network). Response payloads for resource tests are built from
+each model's own required fields (`tests/_samples.py`). **schemathesis** contract tests
+(`tests/test_contract.py`) load the real specs and assert the client's operations, auth header, and
+base paths stay aligned — they fail when a regenerated spec drifts from the resources.
 
 ## Releases
 
-Publishing is driven by `.github/workflows/python-publish.yml` on a **published GitHub Release**: it validates the tag format, runs the test suite (the release is gated on tests passing), builds with `VERSION` set to the release tag, and publishes to TestPyPI and PyPI via trusted publishing. The test workflow (`.github/workflows/test.yml`) runs the suite across Python 3.10–3.14 plus the latest stable (`3.x`).
+`.github/workflows/python-publish.yml` runs on a **published GitHub Release**: it validates the tag,
+runs the suite, builds with `VERSION` set to the tag, **smoke-installs the wheel in a clean venv**
+(guards against a wheel missing the generated code), then publishes to TestPyPI and PyPI via trusted
+publishing. `regenerate-on-api-release.yml` reacts to the backend's `repository_dispatch`
+(`api-spec-updated`) to refresh specs, regenerate, run the suite, and open a PR. `test.yml` runs
+across Python 3.10–3.14 plus latest stable.
