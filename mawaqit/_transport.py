@@ -17,6 +17,9 @@ from .exceptions import (
     NotFoundException,
 )
 
+#: Header carrying the API token (matches the swagger ``APIKeyHeader`` scheme).
+API_TOKEN_HEADER = "Api-Access-Token"
+
 
 def raise_for_status(response: httpx.Response) -> None:
     """Translate a non-2xx MAWAQIT response into the matching exception."""

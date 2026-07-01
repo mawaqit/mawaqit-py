@@ -13,7 +13,7 @@ from typing import Any
 
 import httpx
 
-from .._transport import raise_for_status
+from .._transport import API_TOKEN_HEADER, raise_for_status
 from ..config import ENVIRONMENT_BASE_URLS, Environment, MawaqitSettings
 from ..exceptions import BadCredentialsException, MawaqitException, MissingCredentials
 from .v2 import AsyncV2
@@ -142,7 +142,7 @@ class AsyncMawaqitClient:
         """Send a request, injecting auth and mapping error statuses."""
         headers: dict[str, str] = {}
         if authenticated:
-            headers["Api-Access-Token"] = await self.get_api_token()
+            headers[API_TOKEN_HEADER] = await self.get_api_token()
 
         response = await self._http.request(
             method,
