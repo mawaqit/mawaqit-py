@@ -1,0 +1,70 @@
+name: Regenerate on API release
+
+# Wired to the cross-repo dispatch the backend emits when it releases a new API
+# version, instead of a cron. The backend should send:
+#
+#   event_type: api-spec-updated
+#   client_payload:
+#     specs:
+#       "2.0": "https://.../2.0.yml"   # optional per-version spec URLs
+#       "3.0": "https://.../3.0.yml"
+#
+# When spec URLs are provided they replace the checked-in specs; otherwise the
+# job just re-validates the current specs against the client. Either way, the
+# type generation + full test suite run, and any spec change is opened as a PR.
+on:
+  repository_dispatch:
+    types: [api-spec-updated]
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Refresh swagger specs from the dispatch payload
+        if: ${{ github.event.client_payload.specs }}
+        env:
+          SPECS: ${{ toJSON(github.event.client_payload.specs) }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          for version, url in json.loads(os.environ["SPECS"]).items():
+              dest = f"swagger/{version}.yml"
+              urllib.request.urlretrieve(url, dest)
+              print(f"updated {dest} from {url}")
+          PY
+
+      - name: Install package with dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Regenerate models + sync client
+        run: python scripts/generate.py
+
+      - name: Validate against the (possibly updated) specs
+        # Contract tests fail if the regenerated specs drift from the resources.
+        run: |
+          ruff check .
+          mypy
+          pytest
+
+      - name: Open a PR if the specs changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/api-spec-update
+          title: "chore: sync with new MAWAQIT API spec"
+          commit-message: "chore: update swagger specs from backend release"
+          body: |
+            Automated update triggered by the backend API release.
+
+            Generated code is rebuilt from these specs at build time; if the
+            contract tests failed, the versioned resources need updating too.
+          add-paths: swagger/**

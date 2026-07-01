@@ -51,10 +51,45 @@ jobs:
           name: release-dists
           path: dist/
 
+  Smoke-Install:
+    # Prove the built wheel installs and imports in a clean environment before
+    # publishing — this is what catches a wheel missing the gitignored generated
+    # code (models / sync client).
+    runs-on: ubuntu-latest
+    needs:
+      - Release-Build
+    steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dists
+          path: dist/
+
+      - name: Install the wheel in a clean venv and import it
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install --upgrade pip
+          /tmp/smoke/bin/pip install dist/*.whl
+          /tmp/smoke/bin/python -c "
+          import mawaqit
+          from mawaqit import AsyncMawaqitClient, MawaqitClient
+          # Touch the generated models + both version namespaces.
+          c = MawaqitClient(token='x')
+          assert c.v2.mosque and c.v3.mosque
+          from mawaqit._generated import v2, v3
+          assert v2.Mosque and v3.Times
+          print('smoke OK', mawaqit.__file__)
+          "
+
   TestPyPI-Publish:
     runs-on: ubuntu-latest
     needs:
       - Release-Build
+      - Smoke-Install
     permissions:
       id-token: write
     environment:
@@ -79,6 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - Release-Build
+      - Smoke-Install
     permissions:
       id-token: write
     environment:
