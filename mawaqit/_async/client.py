@@ -16,6 +16,8 @@ import httpx
 from .._transport import raise_for_status
 from ..config import ENVIRONMENT_BASE_URLS, Environment, MawaqitSettings
 from ..exceptions import BadCredentialsException, MawaqitException, MissingCredentials
+from .v2 import AsyncV2
+from .v3 import AsyncV3
 
 #: Basic-auth login endpoint (relative to the base URL). Login always uses v2.
 LOGIN_PATH = "2.0/me"
@@ -63,6 +65,23 @@ class AsyncMawaqitClient:
         # a consumer such as Home Assistant share one httpx client.
         self._http = http_client or httpx.AsyncClient(timeout=timeout)
         self._close_http = http_client is None
+
+        self._v2: AsyncV2 | None = None
+        self._v3: AsyncV3 | None = None
+
+    @property
+    def v2(self) -> AsyncV2:
+        """The v2 API namespace (lazily created, then cached)."""
+        if self._v2 is None:
+            self._v2 = AsyncV2(self)
+        return self._v2
+
+    @property
+    def v3(self) -> AsyncV3:
+        """The v3 API namespace (lazily created, then cached)."""
+        if self._v3 is None:
+            self._v3 = AsyncV3(self)
+        return self._v3
 
     async def __aenter__(self) -> AsyncMawaqitClient:
         return self
