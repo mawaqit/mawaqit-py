@@ -61,9 +61,9 @@ dev = [
 # --------------------------------------------------------------------------- #
 # Version comes from the VERSION env var (set to the release tag in CI, aligned
 # to the newest supported API version). Falls back to 0.0.0 for local/editable
-# installs. Implemented as a custom source in hatch_build.py.
-[tool.hatch.version]
-source = "custom"
+# installs. Supplied by a custom metadata hook in hatch_build.py (see the
+# `version` entry in project.dynamic above).
+[tool.hatch.metadata.hooks.custom]
 
 # Custom build hook (hatch_build.py) regenerates mawaqit/_generated and
 # mawaqit/_sync before the wheel/sdist is assembled.
