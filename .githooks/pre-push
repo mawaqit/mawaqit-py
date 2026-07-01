@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Run lint, type checks, and tests before pushing.
+# Regenerate code, then run lint, type checks, and tests before pushing.
 # Enable once with: git config core.hooksPath .githooks
 
 run() {
@@ -13,6 +13,7 @@ run() {
     fi
 }
 
+run "Generate"    python scripts/generate.py
 run "Ruff lint"   ruff check .
 run "Ruff format" ruff format --check .
 run "Mypy"        mypy
