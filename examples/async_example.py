@@ -1,45 +1,30 @@
+"""Async usage example for the MAWAQIT client."""
+
 import asyncio
 import os
 
 from mawaqit import AsyncMawaqitClient
 
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
-LONGITUDE = 0
-LATITUDE = 0
 
+async def main() -> None:
+    # Authenticate with an API token, or with username/password (basic-auth
+    # login is performed lazily on the first authenticated call).
+    async with AsyncMawaqitClient(
+        token=os.getenv("MAWAQIT_TOKEN"),
+        username=os.getenv("MAWAQIT_USERNAME"),
+        password=os.getenv("MAWAQIT_PASSWORD"),
+    ) as client:
+        # v2: search mosques near a location.
+        mosques = await client.v2.mosque.search(lat=48.8582, lon=2.2945)
+        uuid = mosques[0].uuid
 
-async def main():
-    # Initialize the Mawaqit client:
-    # You can pass the username and password as parameters,
-    # or directly your valid MAWAQIT API token
-    # You can also pass your location (latitude and longitude) as parameters to get the nearest mosques
-    client = AsyncMawaqitClient(
-        username=USERNAME, password=PASSWORD, longitude=LONGITUDE, latitude=LATITUDE
-    )
+        # v2: prayer times for that mosque.
+        prayer_times = await client.v2.mosque.prayer_times(uuid)
+        print(prayer_times.times)
 
-    # Get your API token
-    await client.get_api_token()
-
-    # Get information of the 5 nearest mosques around the given position (long, lat)
-    mosques = await client.all_mosques_neighborhood()
-
-    # Set the mosque to use
-    client.mosque = mosques[0]["uuid"]
-
-    # Fetch the prayer times from client.mosque
-    print(await client.fetch_prayer_times())
-
-    # Get information of the mosques from the specified keyword
-    mosques = await client.fetch_mosques_by_keyword("test_keyword")
-
-    # Set the mosque to use
-    client.mosque = mosques[0]["uuid"]
-
-    # Fetch the prayer times from client.mosque
-    print(await client.fetch_prayer_times())
-
-    await client.close()
+        # v3: the same mosque through the v3 namespace.
+        times = await client.v3.mosque.times(uuid)
+        print(times.shuruq)
 
 
 if __name__ == "__main__":

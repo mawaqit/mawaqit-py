@@ -7,7 +7,7 @@ they can never silently diverge from the real API:
 * ``mawaqit/_generated/v{N}.py`` — pydantic v2 models, one module per API
   version, produced by ``datamodel-code-generator``.
 * ``mawaqit/_sync/`` — the synchronous client, produced from the hand-written
-  async source (``mawaqit/_async``) by ``unasync`` (added in a later step).
+  async source (``mawaqit/_async``) by ``unasync``.
 
 Run directly (``python scripts/generate.py``) or via the Hatch build hook.
 """
@@ -15,17 +15,33 @@ Run directly (``python scripts/generate.py``) or via the Hatch build hook.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
+import unasync
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 SWAGGER_DIR = ROOT / "swagger"
 GENERATED_DIR = ROOT / "mawaqit" / "_generated"
+ASYNC_DIR = ROOT / "mawaqit" / "_async"
+SYNC_DIR = ROOT / "mawaqit" / "_sync"
+
+# Token-level renames applied on top of unasync's defaults (which already strip
+# async/await and rewrite the async dunders). Keys are whole NAME tokens.
+SYNC_REPLACEMENTS = {
+    "AsyncMawaqitClient": "MawaqitClient",
+    "AsyncClient": "Client",  # httpx.AsyncClient -> httpx.Client
+    "AsyncV2": "SyncV2",
+    "AsyncV3": "SyncV3",
+    "aclose": "close",
+    "asyncio": "time",  # `from asyncio import sleep` -> `from time import sleep`
+}
 
 # swagger spec filename (stem) -> generated module name
 VERSIONS = {"2.0": "v2", "3.0": "v3"}
@@ -56,9 +72,7 @@ def generate_models() -> None:
 
     for stem, module in VERSIONS.items():
         spec = yaml.safe_load((SWAGGER_DIR / f"{stem}.yml").read_text())
-        with tempfile.NamedTemporaryFile(
-            "w", suffix=".json", delete=False
-        ) as tmp:
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tmp:
             tmp.write(_to_openapi3(spec))
             tmp_path = tmp.name
 
@@ -93,8 +107,25 @@ def generate_models() -> None:
         print(f"generated {out.relative_to(ROOT)}")
 
 
+def generate_sync() -> None:
+    """Derive the sync client under ``mawaqit/_sync`` from ``mawaqit/_async``."""
+    if SYNC_DIR.exists():
+        shutil.rmtree(SYNC_DIR)
+    SYNC_DIR.mkdir(parents=True)
+
+    rule = unasync.Rule(
+        fromdir=str(ASYNC_DIR) + os.sep,
+        todir=str(SYNC_DIR) + os.sep,
+        additional_replacements=SYNC_REPLACEMENTS,
+    )
+    sources = sorted(str(path) for path in ASYNC_DIR.glob("*.py"))
+    unasync.unasync_files(sources, [rule])
+    print(f"generated {SYNC_DIR.relative_to(ROOT)}/ from {len(sources)} async modules")
+
+
 def main() -> None:
     generate_models()
+    generate_sync()
 
 
 if __name__ == "__main__":
