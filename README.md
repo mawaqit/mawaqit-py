@@ -1,33 +1,19 @@
 # MAWAQIT Python Library
 
-‏السلام عليكم ورحمة الله وبركاته
-
 Official Python client for the [MAWAQIT](https://mawaqit.net) API. Async **and**
 sync, fully typed, with the **v2 and v3** APIs reachable side by side. The models
 are generated from the real swagger specs and the sync client is generated from
 the async one, so nothing is typed or maintained twice.
+
+## Important Note
+
+This library is open source and released under the Apache License 2.0, so you are free to read, modify, and redistribute the code under that license. However, the license covers **only the code of this library, not access to the MAWAQIT API**. Using the library to talk to the MAWAQIT API requires a separate authorization from MAWAQIT: you must obtain permission (and the appropriate credentials/token) before using it. In particular, the API is **not** allowed to be used in large-scale or commercial projects that are not part of the MAWAQIT ecosystem without explicit approval.
 
 ## Installation
 
 ```bash
 pip install mawaqit
 ```
-
-## Getting an API token
-
-1. Create a free account on [mawaqit.net](https://mawaqit.net).
-2. Pass `token=...` (or set `MAWAQIT_TOKEN`) if you already have one. Otherwise
-   exchange your username/password for a token — the client itself only ever
-   holds a token, never your credentials:
-
-```python
-from mawaqit import AsyncMawaqitClient, login
-
-token = await login("me@example.com", "password")  # basic-auth, with retries
-client = AsyncMawaqitClient(token=token)            # keep/cache the token, reuse it
-```
-
-The sync client uses the `login_sync(...)` primitive the same way.
 
 ## Usage
 
@@ -74,8 +60,6 @@ of `client.v2.statistic.favorite` / `unfavorite`.
 
 ### Robustness
 
-Built to behave like the best-in-class SDKs:
-
 - **Never crashes on real data.** Models allow unknown/future fields
   (`extra="allow"`) and treat everything except identity fields (`id`, `uuid`,
   `name`) as optional, because the API routinely returns fields null or absent.
@@ -90,9 +74,6 @@ Base URL and credentials can come from `MAWAQIT_*` environment variables (via
 
 ```bash
 export MAWAQIT_TOKEN=...          # used by the client directly
-export MAWAQIT_USERNAME=...       # used by login() / from_credentials()
-export MAWAQIT_PASSWORD=...
-export MAWAQIT_API_BASE_URL=...   # point at a staging/local deployment
 ```
 
 Home Assistant and other consumers can inject a shared client:
@@ -103,16 +84,6 @@ closed by this library.
 
 All inherit from `MawaqitException`: `BadCredentialsException` (401),
 `NotFoundException` (404), `MissingCredentials` (no token/credentials provided).
-
-## Documentation
-
-Full API reference and guides are built with MkDocs:
-
-```bash
-pip install -e ".[docs,codegen]"
-python scripts/generate.py   # docs introspect the generated code
-mkdocs serve
-```
 
 ## Contributing
 
@@ -139,8 +110,9 @@ Everything hand-written lives in `mawaqit/_async`:
 
    ```python
    async def config(self, uuid: str) -> Config:
-       return await self._client._get(f"3.0/mosque/{uuid}/config", cast_to=Config)
+       return await self._client._get(f"{uuid}/config", cast_to=Config)
    ```
+
 2. Run `python scripts/generate.py` to regenerate the sync mirror.
 3. Add the `(METHOD, path)` to `IMPLEMENTED` in `tests/test_contract.py` and a
    respx test in `tests/test_resources_async.py`.

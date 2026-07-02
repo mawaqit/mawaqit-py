@@ -12,8 +12,7 @@ import pytest
 import respx
 from _samples import build_sample
 
-from mawaqit import MawaqitClient
-from mawaqit import login_sync as login
+from mawaqit import MawaqitClient, login
 from mawaqit._generated import v2 as m2
 from mawaqit._generated import v3 as m3
 from mawaqit.exceptions import NotFoundException
