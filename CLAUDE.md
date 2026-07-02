@@ -60,12 +60,16 @@ VERSION=3.0.0 python -m build      # build hook regenerates + force-includes gen
   normalizer in `scripts/generate.py` demotes the rest — so responses never crash on null/absent/new
   fields. `_request` retries transient failures (network + `429/500/502/503/504`) with backoff.
 - **Shared, non-transformed modules** live at `mawaqit/` top-level: `config.py` (pydantic-settings,
-  `MAWAQIT_API_BASE_URL`), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
+  `MAWAQIT_API_BASE_URL`), `constants.py` (transport tuning + endpoints, defined once and imported by
+  both trees), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
   `API_TOKEN_HEADER` — httpx uses one `Response` type for sync and async, so these are written once),
   and `responses.py` (the one inline-schema response model).
-- **Authentication is centralized** on the root client: a single token (passed directly or obtained
-  via basic-auth login against `/2.0/me`, with retry/backoff) is shared by v2 and v3 and sent as the
-  `Api-Access-Token` header. Only 2xx pass; 401→`BadCredentialsException`, 404→`NotFoundException`,
+- **Authentication is token-only on the client.** The client holds a single API token (as a
+  `SecretStr`, from `token=` or `MAWAQIT_TOKEN`), shared by v2 and v3 and sent as the
+  `Api-Access-Token` header; an authenticated request with no token raises `MissingCredentials`.
+  Exchanging username/password for a token is a **separate concern**: the standalone `login()`
+  function (basic-auth against `/2.0/me`, with retry/backoff) never stores the credentials on the
+  client. Only 2xx pass; 401→`BadCredentialsException`, 404→`NotFoundException`,
   other→`MawaqitException`.
 - **Session ownership (subtle).** The client accepts an injected `httpx.(Async)Client`; ownership is
   tracked with `_close_http = http_client is None`, and `close()` only closes a client we created.

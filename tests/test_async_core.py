@@ -6,9 +6,9 @@ import httpx
 import pytest
 import respx
 
-from mawaqit._async.client import AsyncMawaqitClient
+from mawaqit._async.client import AsyncMawaqitClient, login
 from mawaqit._transport import query_params
-from mawaqit.config import DEFAULT_API_BASE_URL
+from mawaqit.config import DEFAULT_API_BASE_URL, MawaqitSettings
 from mawaqit.exceptions import (
     BadCredentialsException,
     MawaqitException,
@@ -118,47 +118,32 @@ async def test_request_exhausts_retries_on_network_error() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# authentication
+# authentication — standalone login() primitive
 # --------------------------------------------------------------------------- #
-async def test_get_api_token_returns_existing() -> None:
-    client = make_client(token="abc")
-    assert await client.get_api_token() == "abc"
-    await client.close()
-
-
 @respx.mock
-async def test_login_success_caches_token() -> None:
+async def test_login_returns_token() -> None:
     route = respx.post("https://api.test/2.0/me").mock(
         return_value=httpx.Response(200, json={"apiAccessToken": "newtok"})
     )
-    client = make_client(username="u", password="p")
-    assert await client.get_api_token() == "newtok"
-    assert client.token == "newtok"
+    assert await login("u", "p", api_base_url=BASE) == "newtok"
     assert route.calls.last.request.headers["authorization"].startswith("Basic ")
-    await client.close()
 
 
 async def test_login_missing_credentials() -> None:
-    client = make_client()
     with pytest.raises(MissingCredentials):
-        await client.login()
-    # get_api_token re-raises MissingCredentials without retrying.
-    with pytest.raises(MissingCredentials):
-        await client.get_api_token()
-    await client.close()
+        await login(api_base_url=BASE)
 
 
 @respx.mock
 async def test_login_bad_credentials_not_retried() -> None:
-    respx.post("https://api.test/2.0/me").mock(return_value=httpx.Response(401))
-    client = make_client(username="u", password="bad")
+    route = respx.post("https://api.test/2.0/me").mock(return_value=httpx.Response(401))
     with pytest.raises(BadCredentialsException):
-        await client.get_api_token()
-    await client.close()
+        await login("u", "bad", api_base_url=BASE)
+    assert route.call_count == 1  # 401 fails fast, no retry
 
 
 @respx.mock
-async def test_get_api_token_retries_transient_then_succeeds(
+async def test_login_retries_transient_then_succeeds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     slept: list[float] = []
@@ -173,21 +158,48 @@ async def test_get_api_token_retries_transient_then_succeeds(
             httpx.Response(200, json={"apiAccessToken": "tok2"}),
         ]
     )
-    client = make_client(username="u", password="p")
-    assert await client.get_api_token() == "tok2"
+    assert await login("u", "p", api_base_url=BASE) == "tok2"
     assert slept == [1]  # 2 ** 0
-    await client.close()
 
 
 @respx.mock
-async def test_get_api_token_exhausts_retries(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_login_exhausts_retries(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("mawaqit._async.client.sleep", lambda _delay: _noop())
     respx.post("https://api.test/2.0/me").mock(return_value=httpx.Response(503))
-    client = make_client(username="u", password="p")
     with pytest.raises(MawaqitException):
-        await client.get_api_token()
+        await login("u", "p", api_base_url=BASE)
+
+
+@respx.mock
+async def test_login_reuses_injected_client_without_closing() -> None:
+    respx.post("https://api.test/2.0/me").mock(
+        return_value=httpx.Response(200, json={"apiAccessToken": "t"})
+    )
+    injected = httpx.AsyncClient()
+    assert await login("u", "p", api_base_url=BASE, http_client=injected) == "t"
+    assert not injected.is_closed
+    await injected.aclose()
+
+
+@respx.mock
+async def test_login_token_feeds_an_authenticated_client() -> None:
+    respx.post("https://api.test/2.0/me").mock(
+        return_value=httpx.Response(200, json={"apiAccessToken": "ctok"})
+    )
+    thing = respx.get("https://api.test/2.0/thing").mock(
+        return_value=httpx.Response(200, json={"ok": True})
+    )
+    client = make_client(token=await login("u", "p", api_base_url=BASE))
+    assert client.token == "ctok"
+    await client._request("GET", "2.0/thing")
+    assert thing.calls.last.request.headers["Api-Access-Token"] == "ctok"
+    await client.close()
+
+
+async def test_request_without_token_raises_missing_credentials() -> None:
+    client = make_client()  # no token configured
+    with pytest.raises(MissingCredentials):
+        await client._request("GET", "2.0/thing")
     await client.close()
 
 
@@ -246,4 +258,18 @@ async def test_explicit_arg_overrides_env(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("MAWAQIT_TOKEN", "envtok")
     client = AsyncMawaqitClient(token="argtok")
     assert client.token == "argtok"
+    await client.close()
+
+
+async def test_token_is_none_without_credentials() -> None:
+    client = make_client()
+    assert client.token is None
+    await client.close()
+
+
+async def test_secrets_are_not_leaked_in_repr() -> None:
+    settings = MawaqitSettings(password="hunter2", token="s3cret")  # type: ignore[arg-type]
+    assert "hunter2" not in repr(settings) and "s3cret" not in repr(settings)
+    client = make_client(token="s3cret")
+    assert client._token is not None and "s3cret" not in repr(client._token)
     await client.close()

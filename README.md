@@ -16,8 +16,18 @@ pip install mawaqit
 ## Getting an API token
 
 1. Create a free account on [mawaqit.net](https://mawaqit.net).
-2. Pass `token=...` if you already have one, or pass `username=`/`password=` and
-   the client performs a basic-auth login lazily on the first authenticated call.
+2. Pass `token=...` (or set `MAWAQIT_TOKEN`) if you already have one. Otherwise
+   exchange your username/password for a token — the client itself only ever
+   holds a token, never your credentials:
+
+```python
+from mawaqit import AsyncMawaqitClient, login
+
+token = await login("me@example.com", "password")  # basic-auth, with retries
+client = AsyncMawaqitClient(token=token)            # keep/cache the token, reuse it
+```
+
+The sync client uses the `login_sync(...)` primitive the same way.
 
 ## Usage
 
@@ -75,10 +85,13 @@ Built to behave like the best-in-class SDKs:
 ### Configuration
 
 Base URL and credentials can come from `MAWAQIT_*` environment variables (via
-`pydantic-settings`) instead of constructor arguments:
+`pydantic-settings`) instead of arguments. Credentials are held as
+`SecretStr`, so they never leak into logs or `repr`:
 
 ```bash
-export MAWAQIT_TOKEN=...          # or MAWAQIT_USERNAME / MAWAQIT_PASSWORD
+export MAWAQIT_TOKEN=...          # used by the client directly
+export MAWAQIT_USERNAME=...       # used by login() / from_credentials()
+export MAWAQIT_PASSWORD=...
 export MAWAQIT_API_BASE_URL=...   # point at a staging/local deployment
 ```
 

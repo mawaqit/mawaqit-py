@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from ...client import AsyncMawaqitClient
+from .._base import Resource
 
 
-class StatisticResource:
+class StatisticResource(Resource):
     """Statistic endpoints of the v3 API."""
 
-    def __init__(self, client: AsyncMawaqitClient) -> None:
-        self._client = client
+    prefix = "3.0/statistic"
 
     async def installations(self) -> dict[str, Any]:
         """Number of installed mosques per country (typed as a bare object)."""
-        return await self._client._get_json("3.0/statistic/installations")
+        return await self._get_json("installations")
