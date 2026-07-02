@@ -28,3 +28,13 @@ def test_empty_payload_validates() -> None:
 def test_identity_fields_remain_required() -> None:
     required = {n for n, f in v2.Mosque.model_fields.items() if f.is_required()}
     assert required == {"id", "uuid", "name"}
+
+
+def test_camelcase_json_parses_into_snake_case_attributes() -> None:
+    mosque = v2.Mosque.model_validate(
+        {"id": 1, "uuid": "u", "name": "Essunna", "womenSpace": True, "jumua2": "14:00"}
+    )
+    assert mosque.women_space is True  # snake_case attribute
+    assert mosque.jumua2 == "14:00"
+    me = v2.Me.model_validate({"id": 1, "apiAccessToken": "tok", "apiQuota": 9})
+    assert me.api_access_token == "tok"
