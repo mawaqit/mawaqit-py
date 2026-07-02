@@ -141,7 +141,11 @@ def generate_sync() -> None:
         todir=str(SYNC_DIR) + os.sep,
         additional_replacements=SYNC_REPLACEMENTS,
     )
-    sources = sorted(str(path) for path in ASYNC_DIR.glob("*.py"))
+    sources = sorted(str(path) for path in ASYNC_DIR.rglob("*.py"))
+    # Mirror the (possibly nested) package tree; unasync won't create dirs.
+    for source in sources:
+        target = SYNC_DIR / Path(source).relative_to(ASYNC_DIR)
+        target.parent.mkdir(parents=True, exist_ok=True)
     unasync.unasync_files(sources, [rule])
     print(f"generated {SYNC_DIR.relative_to(ROOT)}/ from {len(sources)} async modules")
 

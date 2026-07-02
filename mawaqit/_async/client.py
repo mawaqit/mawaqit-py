@@ -17,8 +17,8 @@ from pydantic import BaseModel
 from .._transport import API_TOKEN_HEADER, raise_for_status
 from ..config import ENVIRONMENT_BASE_URLS, Environment, MawaqitSettings
 from ..exceptions import BadCredentialsException, MawaqitException, MissingCredentials
-from .v2 import AsyncV2
-from .v3 import AsyncV3
+from .resources.v2 import AsyncV2
+from .resources.v3 import AsyncV3
 
 #: Basic-auth login endpoint (relative to the base URL). Login always uses v2.
 LOGIN_PATH = "2.0/me"
