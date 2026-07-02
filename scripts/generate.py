@@ -112,6 +112,7 @@ def generate_models() -> None:
                 "mawaqit._models_base.MawaqitModel",
                 "--target-python-version",
                 "3.10",
+                "--snake-case-field",
                 "--use-standard-collections",
                 "--use-union-operator",
                 "--use-annotated",
