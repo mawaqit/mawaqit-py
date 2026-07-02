@@ -88,3 +88,17 @@ class MosqueResource:
             params=query_params(order=order, page=page),
             cast_to=models.Mosque,
         )
+
+    async def favorite(self, uuid: str) -> None:
+        """Increment the mosque's subscriber counter.
+
+        Convenience alias for ``client.v2.statistic.favorite``.
+        """
+        await self._client._post(f"2.0/statistic/mosque/{uuid}/favorite")
+
+    async def unfavorite(self, uuid: str) -> None:
+        """Decrement the mosque's subscriber counter.
+
+        Convenience alias for ``client.v2.statistic.unfavorite``.
+        """
+        await self._client._delete(f"2.0/statistic/mosque/{uuid}/favorite")
