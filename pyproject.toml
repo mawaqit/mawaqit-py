@@ -26,6 +26,9 @@ dependencies = [
     "pydantic-settings>=2.1",
 ]
 
+[project.scripts]
+mawaqit-py = "mawaqit.cli:main"
+
 [project.urls]
 Homepage = "https://mawaqit.net"
 Repository = "https://github.com/mawaqit/mawaqit-py"
@@ -44,12 +47,8 @@ test = [
     "respx>=0.21",
     "schemathesis>=3.29",
 ]
-docs = [
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.24",
-]
 dev = [
-    "mawaqit[codegen,test,docs]",
+    "mawaqit[codegen,test]",
     "mypy>=1.8",
     "ruff>=0.6",
     "pre-commit>=3.5",
@@ -70,27 +69,28 @@ dev = [
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.build.targets.wheel]
-packages = ["mawaqit"]
+# src layout: the package lives at src/mawaqit but installs as ``mawaqit``.
+packages = ["src/mawaqit"]
 # The generated packages are gitignored, so Hatch's VCS file-discovery skips
 # them. Force them into the artifact explicitly, otherwise the published wheel
 # is broken on install.
 artifacts = [
-    "mawaqit/_generated/**/*.py",
-    "mawaqit/_sync/**/*.py",
+    "src/mawaqit/_generated/**/*.py",
+    "src/mawaqit/_sync/**/*.py",
 ]
 
 [tool.hatch.build.targets.sdist]
 # Ship the specs + generation entrypoint so the sdist can rebuild from source.
 include = [
-    "mawaqit",
+    "src/mawaqit",
     "scripts",
     "swagger",
     "hatch_build.py",
     "README.md",
 ]
 artifacts = [
-    "mawaqit/_generated/**/*.py",
-    "mawaqit/_sync/**/*.py",
+    "src/mawaqit/_generated/**/*.py",
+    "src/mawaqit/_sync/**/*.py",
 ]
 
 # --------------------------------------------------------------------------- #
@@ -100,7 +100,7 @@ artifacts = [
 line-length = 88
 # Generated code is mechanically derived and validated by the test suite +
 # pydantic at runtime; it is not gated by the linter to avoid churn.
-extend-exclude = ["mawaqit/_generated", "mawaqit/_sync"]
+extend-exclude = ["src/mawaqit/_generated", "src/mawaqit/_sync"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -108,7 +108,8 @@ ignore = ["E501"]  # line length is owned by the formatter
 
 [tool.mypy]
 python_version = "3.10"
-files = ["mawaqit"]
+files = ["src/mawaqit"]
+mypy_path = "src"
 strict = true
 
 [[tool.mypy.overrides]]
@@ -127,7 +128,7 @@ addopts = "--cov=mawaqit --cov-report=term-missing --cov-fail-under=100"
 # the 100%-covered source of truth, the models are validated by pydantic + the
 # contract tests, and the unasync-derived sync client is verified by a dedicated
 # smoke suite (test_sync.py) rather than re-hitting every mirrored line.
-omit = ["mawaqit/_generated/*", "mawaqit/_sync/*"]
+omit = ["src/mawaqit/_generated/*", "src/mawaqit/_sync/*"]
 
 [tool.coverage.report]
 exclude_also = ["if TYPE_CHECKING:", "@overload"]

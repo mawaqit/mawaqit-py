@@ -11,5 +11,5 @@ __pycache__/
 site/
 
 # Generated code — rebuilt locally (pre-commit) and in CI/build, never committed.
-mawaqit/_generated/
-mawaqit/_sync/
+src/mawaqit/_generated/
+src/mawaqit/_sync/

@@ -28,9 +28,9 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 SWAGGER_DIR = ROOT / "swagger"
-GENERATED_DIR = ROOT / "mawaqit" / "_generated"
-ASYNC_DIR = ROOT / "mawaqit" / "_async"
-SYNC_DIR = ROOT / "mawaqit" / "_sync"
+GENERATED_DIR = ROOT / "src" / "mawaqit" / "_generated"
+ASYNC_DIR = ROOT / "src" / "mawaqit" / "_async"
+SYNC_DIR = ROOT / "src" / "mawaqit" / "_sync"
 
 # Token-level renames applied on top of unasync's defaults (which already strip
 # async/await and rewrite the async dunders). Keys are whole NAME tokens.

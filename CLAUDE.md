@@ -29,12 +29,11 @@ regenerate — see the README's "Extending" section.
 ## Commands
 
 ```bash
-pip install -e ".[dev]"        # install with all dev/test/docs/codegen extras
+pip install -e ".[dev]"        # install with all dev/test/codegen extras
 python scripts/generate.py     # (re)build the gitignored generated trees — required before tests
 pytest                         # full suite; enforces 100% coverage on hand-written code
 ruff check . && ruff format --check .
 mypy                           # strict; also type-checks the generated sync tree
-mkdocs serve                   # docs (needs generated code present)
 ```
 
 - **Coverage is gated at 100%** (`--cov-fail-under=100` in `pyproject.toml`), scoped to hand-written
@@ -63,7 +62,8 @@ VERSION=3.0.0 python -m build      # build hook regenerates + force-includes gen
   `MAWAQIT_API_BASE_URL`), `constants.py` (transport tuning + endpoints, defined once and imported by
   both trees), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
   `API_TOKEN_HEADER` — httpx uses one `Response` type for sync and async, so these are written once),
-  and `responses.py` (the one inline-schema response model).
+  `responses.py` (the one inline-schema response model), and `cli.py` (the `mawaqit-py` console
+  script — a sync `login` command that prints a token; prompts to stderr, token to stdout).
 - **Authentication is token-only on the client.** The client holds a single API token (as a
   `SecretStr`, from `token=` or `MAWAQIT_TOKEN`), shared by v2 and v3 and sent as the
   `Api-Access-Token` header; an authenticated request with no token raises `MissingCredentials`.
