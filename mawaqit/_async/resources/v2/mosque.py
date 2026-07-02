@@ -17,10 +17,6 @@ class MosqueResource:
     def __init__(self, client: AsyncMawaqitClient) -> None:
         self._client = client
 
-    def __call__(self, uuid: str) -> MosqueHandle:
-        """Bind a uuid once: ``client.v2.mosque(uuid).prayer_times()``."""
-        return MosqueHandle(self, uuid)
-
     async def search(
         self,
         *,
@@ -94,47 +90,9 @@ class MosqueResource:
         )
 
     async def favorite(self, uuid: str) -> None:
-        """Increment the mosque's subscriber counter.
-
-        Convenience alias for ``client.v2.statistic.favorite``.
-        """
+        """Increment the mosque's subscriber counter."""
         await self._client._post(f"2.0/statistic/mosque/{uuid}/favorite")
 
     async def unfavorite(self, uuid: str) -> None:
-        """Decrement the mosque's subscriber counter.
-
-        Convenience alias for ``client.v2.statistic.unfavorite``.
-        """
-        await self._client._delete(f"2.0/statistic/mosque/{uuid}/favorite")
-
-
-class MosqueHandle:
-    """A v2 mosque bound to its uuid.
-
-    Returned by ``client.v2.mosque(uuid)`` so the uuid is not repeated on every
-    call: ``m = client.v2.mosque(uuid); await m.prayer_times()``.
-    """
-
-    def __init__(self, resource: MosqueResource, uuid: str) -> None:
-        self._resource = resource
-        self.uuid = uuid
-
-    async def prayer_times(
-        self, *, calendar: bool | None = None, updated_at: int | None = None
-    ) -> models.PrayerTimes:
-        """Prayer times and mosque info; pass ``calendar`` for the full year."""
-        return await self._resource.prayer_times(
-            self.uuid, calendar=calendar, updated_at=updated_at
-        )
-
-    async def weather(self) -> models.Weather:
-        """Weather for the mosque's city."""
-        return await self._resource.weather(self.uuid)
-
-    async def favorite(self) -> None:
-        """Increment the mosque's subscriber counter."""
-        await self._resource.favorite(self.uuid)
-
-    async def unfavorite(self) -> None:
         """Decrement the mosque's subscriber counter."""
-        await self._resource.unfavorite(self.uuid)
+        await self._client._delete(f"2.0/statistic/mosque/{uuid}/favorite")
