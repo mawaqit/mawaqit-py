@@ -282,6 +282,59 @@ async def test_v3_installations_returns_dict() -> None:
 # --------------------------------------------------------------------------- #
 # namespace behaviour
 # --------------------------------------------------------------------------- #
+@respx.mock
+async def test_bound_mosque_handle_v3_forwards_every_method() -> None:
+    getters = {
+        "times": ("times", build_sample(m3.Times)),
+        "info": ("info", build_sample(m3.Info)),
+        "config": ("config", build_sample(m3.Config)),
+        "announcements": ("announcements", {"announcements": [], "events": []}),
+        "flash_message": ("flash-message", [build_sample(m3.FlashMessage)]),
+        "hijri_date": ("hijri-date", build_sample(m3.HijriDate)),
+        "messages": ("messages", build_sample(m3.Messages)),
+    }
+    for suffix, payload in getters.values():
+        respx.get(BASE + f"3.0/mosque/u1/{suffix}").mock(
+            return_value=httpx.Response(200, json=payload)
+        )
+    respx.post(BASE + "3.0/mosque/u1/androidtv-life-status").mock(
+        return_value=httpx.Response(201)
+    )
+
+    c = client()
+    mosque = c.v3.mosque("u1")
+    assert mosque.uuid == "u1"  # uuid bound once, not repeated per call
+    for name in getters:
+        assert await getattr(mosque, name)() is not None
+    assert await mosque.androidtv_life_status(device_id="d1") is None
+    await c.close()
+
+
+@respx.mock
+async def test_bound_mosque_handle_v2_forwards_every_method() -> None:
+    prayer = respx.get(BASE + "2.0/mosque/u1/prayer-times").mock(
+        return_value=httpx.Response(200, json=build_sample(m2.PrayerTimes))
+    )
+    respx.get(BASE + "2.0/mosque/u1/weather").mock(
+        return_value=httpx.Response(200, json=build_sample(m2.Weather))
+    )
+    respx.post(BASE + "2.0/statistic/mosque/u1/favorite").mock(
+        return_value=httpx.Response(204)
+    )
+    respx.delete(BASE + "2.0/statistic/mosque/u1/favorite").mock(
+        return_value=httpx.Response(204)
+    )
+
+    c = client()
+    mosque = c.v2.mosque("u1")
+    assert isinstance(await mosque.prayer_times(calendar=True), m2.PrayerTimes)
+    assert prayer.calls.last.request.url.params["calendar"] == "true"  # params forward
+    assert isinstance(await mosque.weather(), m2.Weather)
+    assert await mosque.favorite() is None
+    assert await mosque.unfavorite() is None
+    await c.close()
+
+
 async def test_version_namespaces_are_cached() -> None:
     c = client()
     assert c.v2 is c.v2
