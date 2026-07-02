@@ -47,19 +47,39 @@ SYNC_REPLACEMENTS = {
 VERSIONS = {"2.0": "v2", "3.0": "v3"}
 
 
+# Fields that are genuinely always present (identity keys). Everything else is
+# demoted to optional, because the MAWAQIT specs over-mark fields as ``required``
+# while the API routinely returns them null/absent. Keeping these required gives
+# the golden path good DX (e.g. mosque.uuid stays ``str``, not ``str | None``,
+# so it can be passed straight to the next call).
+ALWAYS_REQUIRED = {"id", "uuid", "name", "slug"}
+
+
+def _relax_required(schemas: dict[str, Any]) -> None:
+    """Keep only identity fields required; demote the rest to optional."""
+    for schema in schemas.values():
+        required = schema.get("required")
+        if not required:
+            continue
+        schema["required"] = [name for name in required if name in ALWAYS_REQUIRED]
+
+
 def _to_openapi3(spec: dict[str, Any]) -> str:
     """Lift a Swagger 2.0 ``definitions`` block into a minimal OpenAPI 3 doc.
 
     datamodel-code-generator's OpenAPI parser reads models from
     ``components/schemas``; Swagger 2.0 keeps them under ``definitions`` with
     ``#/definitions/`` refs. We only need the schemas (not the paths) to emit
-    models, so we wrap them and rewrite the ref prefix.
+    models, so we wrap them, demote null-hinted required fields, and rewrite the
+    ref prefix.
     """
+    schemas = spec.get("definitions", {})
+    _relax_required(schemas)
     doc = {
         "openapi": "3.0.3",
         "info": spec.get("info", {"title": "MAWAQIT", "version": "0"}),
         "paths": {},
-        "components": {"schemas": spec.get("definitions", {})},
+        "components": {"schemas": schemas},
     }
     return json.dumps(doc).replace("#/definitions/", "#/components/schemas/")
 
@@ -88,6 +108,8 @@ def generate_models() -> None:
                 "openapi",
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
+                "--base-class",
+                "mawaqit._models_base.MawaqitModel",
                 "--target-python-version",
                 "3.10",
                 "--use-standard-collections",
