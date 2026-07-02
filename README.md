@@ -55,8 +55,7 @@ Results are pydantic models (e.g. `client.v3.mosque.times(uuid)` returns a
 `Times`), with Python-style **snake_case** attributes (`mosque.women_space`,
 `me.api_access_token`) parsed from the API's camelCase JSON.
 
-`client.v2.mosque` also exposes `favorite(uuid)` / `unfavorite(uuid)` as aliases
-of `client.v2.statistic.favorite` / `unfavorite`.
+`client.v2.mosque` also exposes `favorite(uuid)` / `unfavorite(uuid)` helpers for the v2 `/statistic/mosque/{uuid}/favorite` endpoints.
 
 ### Robustness
 
