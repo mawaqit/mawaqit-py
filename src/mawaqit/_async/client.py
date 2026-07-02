@@ -25,7 +25,7 @@ from ..constants import (
     RETRY_BACKOFF_CAP,
     RETRY_STATUSES,
 )
-from ..exceptions import BadCredentialsException, MawaqitException, MissingCredentials
+from ..exceptions import MawaqitException, MissingCredentials
 from .resources.v2 import AsyncV2
 from .resources.v3 import AsyncV3
 
@@ -212,18 +212,20 @@ async def login(
     auth = (config.username, config.password.get_secret_value())
     try:
         for attempt in range(MAX_LOGIN_RETRIES):
+            final = attempt == MAX_LOGIN_RETRIES - 1
             try:
                 response = await http.post(url, auth=auth)
-                raise_for_status(response)
-            except BadCredentialsException:
-                raise
-            except MawaqitException:
-                if attempt == MAX_LOGIN_RETRIES - 1:
-                    raise
-                await sleep(min(LOGIN_BACKOFF_CAP, 2**attempt))
+            except httpx.TransportError as exc:
+                if final:
+                    raise MawaqitException(
+                        f"Login failed after retries: {exc}"
+                    ) from exc
             else:
-                token: str = response.json()["apiAccessToken"]
-                return token
+                if not (response.status_code in RETRY_STATUSES and not final):
+                    raise_for_status(response)
+                    token: str = response.json()["apiAccessToken"]
+                    return token
+            await sleep(min(LOGIN_BACKOFF_CAP, 2**attempt))
     finally:
         if http_client is None:
             await http.aclose()
