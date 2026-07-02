@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from .hadith import HadithResource
 from .me import MeResource
 from .mosque import MosqueResource
-from .statistic import StatisticResource
 from .support import SupportResource
 
 if TYPE_CHECKING:
@@ -20,7 +19,6 @@ class AsyncV2:
     def __init__(self, client: AsyncMawaqitClient) -> None:
         self.mosque = MosqueResource(client)
         self.hadith = HadithResource(client)
-        self.statistic = StatisticResource(client)
         self.support = SupportResource(client)
         self.me = MeResource(client)
 

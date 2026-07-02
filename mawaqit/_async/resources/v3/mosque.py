@@ -18,10 +18,6 @@ class MosqueResource:
     def __init__(self, client: AsyncMawaqitClient) -> None:
         self._client = client
 
-    def __call__(self, uuid: str) -> MosqueHandle:
-        """Bind a uuid once: ``client.v3.mosque(uuid).times()``."""
-        return MosqueHandle(self, uuid)
-
     async def times(self, uuid: str) -> models.Times:
         """Prayer times, iqama and calendar for a mosque."""
         return await self._client._get(f"3.0/mosque/{uuid}/times", cast_to=models.Times)
@@ -94,64 +90,4 @@ class MosqueResource:
                     "app-version": app_version,
                 }
             ),
-        )
-
-
-class MosqueHandle:
-    """A v3 mosque bound to its uuid.
-
-    Returned by ``client.v3.mosque(uuid)`` so the uuid is not repeated on every
-    call: ``m = client.v3.mosque(uuid); await m.times()``. Each method forwards
-    to :class:`MosqueResource` with the bound uuid.
-    """
-
-    def __init__(self, resource: MosqueResource, uuid: str) -> None:
-        self._resource = resource
-        self.uuid = uuid
-
-    async def times(self) -> models.Times:
-        """Prayer times, iqama and calendar."""
-        return await self._resource.times(self.uuid)
-
-    async def info(self) -> models.Info:
-        """Descriptive info (address, services, flash message)."""
-        return await self._resource.info(self.uuid)
-
-    async def config(self) -> models.Config:
-        """Big-screen display configuration."""
-        return await self._resource.config(self.uuid)
-
-    async def announcements(self) -> AnnouncementsAndEvents:
-        """Announcements and events."""
-        return await self._resource.announcements(self.uuid)
-
-    async def flash_message(self) -> list[models.FlashMessage]:
-        """Flash messages."""
-        return await self._resource.flash_message(self.uuid)
-
-    async def hijri_date(self) -> models.HijriDate:
-        """Hijri date adjustment parameters."""
-        return await self._resource.hijri_date(self.uuid)
-
-    async def messages(self) -> models.Messages:
-        """Combined announcements/events message feed."""
-        return await self._resource.messages(self.uuid)
-
-    async def androidtv_life_status(
-        self,
-        *,
-        device_id: str,
-        brand: str | None = None,
-        model: str | None = None,
-        android_version: str | None = None,
-        app_version: str | None = None,
-    ) -> None:
-        """Report an Android TV box life-status ping."""
-        await self._resource.androidtv_life_status(
-            self.uuid,
-            device_id=device_id,
-            brand=brand,
-            model=model,
-            android_version=android_version,
-            app_version=app_version,
         )

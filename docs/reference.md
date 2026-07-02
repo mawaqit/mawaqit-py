@@ -15,7 +15,6 @@
       members_order: source
 
 ::: mawaqit._async.resources.v2.hadith
-::: mawaqit._async.resources.v2.statistic
 ::: mawaqit._async.resources.v2.support
 ::: mawaqit._async.resources.v2.me
 
