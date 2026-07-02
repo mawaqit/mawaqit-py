@@ -74,13 +74,12 @@ Built to behave like the best-in-class SDKs:
 
 ### Configuration
 
-Environment and credentials can come from `MAWAQIT_*` environment variables (via
+Base URL and credentials can come from `MAWAQIT_*` environment variables (via
 `pydantic-settings`) instead of constructor arguments:
 
 ```bash
-export MAWAQIT_TOKEN=...            # or MAWAQIT_USERNAME / MAWAQIT_PASSWORD
-export MAWAQIT_ENVIRONMENT=staging  # production (default) | staging | local
-export MAWAQIT_BASE_URL=...         # override the environment's base URL
+export MAWAQIT_TOKEN=...          # or MAWAQIT_USERNAME / MAWAQIT_PASSWORD
+export MAWAQIT_API_BASE_URL=...   # point at a staging/local deployment
 ```
 
 Home Assistant and other consumers can inject a shared client:

@@ -60,7 +60,7 @@ VERSION=3.0.0 python -m build      # build hook regenerates + force-includes gen
   normalizer in `scripts/generate.py` demotes the rest — so responses never crash on null/absent/new
   fields. `_request` retries transient failures (network + `429/500/502/503/504`) with backoff.
 - **Shared, non-transformed modules** live at `mawaqit/` top-level: `config.py` (pydantic-settings,
-  environments), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
+  `MAWAQIT_API_BASE_URL`), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
   `API_TOKEN_HEADER` — httpx uses one `Response` type for sync and async, so these are written once),
   and `responses.py` (the one inline-schema response model).
 - **Authentication is centralized** on the root client: a single token (passed directly or obtained

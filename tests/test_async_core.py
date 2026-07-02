@@ -8,7 +8,7 @@ import respx
 
 from mawaqit._async.client import AsyncMawaqitClient
 from mawaqit._transport import query_params
-from mawaqit.config import ENVIRONMENT_BASE_URLS, Environment, MawaqitSettings
+from mawaqit.config import DEFAULT_API_BASE_URL, MawaqitSettings
 from mawaqit.exceptions import (
     BadCredentialsException,
     MawaqitException,
@@ -20,7 +20,7 @@ BASE = "https://api.test/"
 
 
 def make_client(**kwargs: object) -> AsyncMawaqitClient:
-    kwargs.setdefault("base_url", BASE)
+    kwargs.setdefault("api_base_url", BASE)
     return AsyncMawaqitClient(**kwargs)  # type: ignore[arg-type]
 
 
@@ -221,26 +221,20 @@ async def test_context_manager_closes_owned_client() -> None:
 # --------------------------------------------------------------------------- #
 # base URL resolution
 # --------------------------------------------------------------------------- #
-async def test_base_url_from_environment() -> None:
-    client = AsyncMawaqitClient(environment=Environment.PRODUCTION, token="t")
-    assert client._base_url == ENVIRONMENT_BASE_URLS[Environment.PRODUCTION]
-    await client.close()
-
-
-async def test_base_url_defaults_to_production() -> None:
+async def test_base_url_defaults_to_the_default() -> None:
     client = AsyncMawaqitClient(token="t")
-    assert client._base_url == ENVIRONMENT_BASE_URLS[Environment.PRODUCTION]
+    assert client._base_url == DEFAULT_API_BASE_URL
     await client.close()
 
 
 async def test_base_url_from_settings() -> None:
-    settings = MawaqitSettings(base_url="https://s/api/")
+    settings = MawaqitSettings(api_base_url="https://s/api/")
     client = AsyncMawaqitClient(settings=settings)
     assert client._base_url == "https://s/api/"
     await client.close()
 
 
-async def test_base_url_trailing_slash_is_added() -> None:
-    client = AsyncMawaqitClient(base_url="https://x/api", token="t")
+async def test_api_base_url_trailing_slash_is_added() -> None:
+    client = AsyncMawaqitClient(api_base_url="https://x/api", token="t")
     assert client._base_url == "https://x/api/"
     await client.close()
