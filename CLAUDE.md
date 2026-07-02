@@ -52,8 +52,13 @@ VERSION=3.0.0 python -m build      # build hook regenerates + force-includes gen
 ## Architecture
 
 - **`mawaqit/_async/` is the hand-written source of truth.** `client.py` holds the transport, auth,
-  and cached `.v2`/`.v3` namespace properties; `v2.py`/`v3.py` hold thin, typed resource methods
-  (build path/params → `self._client._request(...)` → parse into the generated model).
+  retries, and cached `.v2`/`.v3` namespace properties plus typed request helpers
+  (`_get`/`_get_list`/`_get_json`/`_post`/`_delete(cast_to=...)`); `v2.py`/`v3.py` hold resource
+  methods that are each one typed line calling a helper. Adding an endpoint is a ~3-line method.
+- **Robustness (like OpenAI/Anthropic SDKs).** Generated models subclass `MawaqitModel`
+  (`extra="allow"`) and keep only identity fields (`id`/`uuid`/`name`/`slug`) required — the
+  normalizer in `scripts/generate.py` demotes the rest — so responses never crash on null/absent/new
+  fields. `_request` retries transient failures (network + `429/500/502/503/504`) with backoff.
 - **Shared, non-transformed modules** live at `mawaqit/` top-level: `config.py` (pydantic-settings,
   environments), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
   `API_TOKEN_HEADER` — httpx uses one `Response` type for sync and async, so these are written once),

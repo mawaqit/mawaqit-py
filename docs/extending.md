@@ -8,12 +8,14 @@ All hand-written code lives in `mawaqit/_async`. The sync client
 
 1. Add the method to the relevant resource class in `mawaqit/_async/v2.py` or
    `mawaqit/_async/v3.py` — or add a new `SomethingResource` class and expose it
-   on the version namespace (`AsyncV2` / `AsyncV3`). Keep it thin:
+   on the version namespace (`AsyncV2` / `AsyncV3`). It is one typed line via a
+   request helper (`_get` / `_get_list` / `_get_json` / `_post` / `_delete`):
 
     ```python
     async def weather(self, uuid: str) -> models.Weather:
-        response = await self._client._request("GET", f"2.0/mosque/{uuid}/weather")
-        return models.Weather.model_validate(response.json())
+        return await self._client._get(
+            f"2.0/mosque/{uuid}/weather", cast_to=models.Weather
+        )
     ```
 
 2. Regenerate the sync mirror:
