@@ -56,7 +56,21 @@ with MawaqitClient(token="YOUR_TOKEN") as client:
 ```
 
 Results are pydantic models (e.g. `client.v3.mosque.times(uuid)` returns a
-`Times`), so attributes are typed and validated.
+`Times`), with Python-style **snake_case** attributes (`mosque.women_space`,
+`me.api_access_token`) parsed from the API's camelCase JSON.
+
+### Bound mosque handle
+
+Call a mosque resource with a uuid to bind it once, so you don't repeat it:
+
+```python
+mosque = client.v3.mosque(uuid)
+times = await mosque.times()
+config = await mosque.config()
+```
+
+`client.v2.mosque` also exposes `favorite(uuid)` / `unfavorite(uuid)` as aliases
+of `client.v2.statistic.favorite` / `unfavorite`.
 
 ### Robustness
 
