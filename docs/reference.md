@@ -8,19 +8,24 @@
     options:
       show_source: false
 
-## v2 namespace
+## v2 resources
 
-::: mawaqit._async.v2
+::: mawaqit._async.resources.v2.mosque
     options:
-      show_root_heading: false
       members_order: source
 
-## v3 namespace
+::: mawaqit._async.resources.v2.hadith
+::: mawaqit._async.resources.v2.statistic
+::: mawaqit._async.resources.v2.support
+::: mawaqit._async.resources.v2.me
 
-::: mawaqit._async.v3
+## v3 resources
+
+::: mawaqit._async.resources.v3.mosque
     options:
-      show_root_heading: false
       members_order: source
+
+::: mawaqit._async.resources.v3.statistic
 
 ## Configuration
 
