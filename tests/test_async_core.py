@@ -74,6 +74,50 @@ async def test_status_mapping(status: int, exception: type[Exception]) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# retries
+# --------------------------------------------------------------------------- #
+@respx.mock
+async def test_request_retries_transient_5xx_then_succeeds() -> None:
+    route = respx.get("https://api.test/2.0/x").mock(
+        side_effect=[httpx.Response(503), httpx.Response(200, json={"ok": 1})]
+    )
+    client = make_client(token="t")
+    response = await client._request("GET", "2.0/x")
+    assert response.json() == {"ok": 1}
+    assert route.call_count == 2
+    await client.close()
+
+
+@respx.mock
+async def test_request_retries_network_error_then_succeeds() -> None:
+    respx.get("https://api.test/2.0/x").mock(
+        side_effect=[httpx.ConnectError("boom"), httpx.Response(200, json={"ok": 1})]
+    )
+    client = make_client(token="t")
+    response = await client._request("GET", "2.0/x")
+    assert response.json() == {"ok": 1}
+    await client.close()
+
+
+@respx.mock
+async def test_request_exhausts_retries_on_5xx() -> None:
+    respx.get("https://api.test/2.0/x").mock(return_value=httpx.Response(503))
+    client = make_client(token="t", max_retries=1)
+    with pytest.raises(MawaqitException):
+        await client._request("GET", "2.0/x")
+    await client.close()
+
+
+@respx.mock
+async def test_request_exhausts_retries_on_network_error() -> None:
+    respx.get("https://api.test/2.0/x").mock(side_effect=httpx.ConnectError("boom"))
+    client = make_client(token="t", max_retries=1)
+    with pytest.raises(MawaqitException):
+        await client._request("GET", "2.0/x")
+    await client.close()
+
+
+# --------------------------------------------------------------------------- #
 # authentication
 # --------------------------------------------------------------------------- #
 async def test_get_api_token_returns_existing() -> None:
