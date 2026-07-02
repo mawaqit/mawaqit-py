@@ -58,6 +58,16 @@ with MawaqitClient(token="YOUR_TOKEN") as client:
 Results are pydantic models (e.g. `client.v3.mosque.times(uuid)` returns a
 `Times`), so attributes are typed and validated.
 
+### Robustness
+
+Built to behave like the best-in-class SDKs:
+
+- **Never crashes on real data.** Models allow unknown/future fields
+  (`extra="allow"`) and treat everything except identity fields (`id`, `uuid`,
+  `name`) as optional, because the API routinely returns fields null or absent.
+- **Automatic retries** with exponential backoff on transient failures (network
+  errors and `429/500/502/503/504`); tune with `max_retries=`.
+
 ### Configuration
 
 Environment and credentials can come from `MAWAQIT_*` environment variables (via
@@ -108,8 +118,13 @@ Everything hand-written lives in `mawaqit/_async`:
 
 1. Add the method to the relevant resource class in `mawaqit/_async/v2.py` or
    `v3.py` (or add a new `SomethingResource` class and expose it on the
-   `AsyncV2` / `AsyncV3` namespace). Keep it thin: build the path/params, call
-   `self._client._request(...)`, and parse the JSON into the generated model.
+   `AsyncV2` / `AsyncV3` namespace). It is a single typed line via a request
+   helper (`_get` / `_get_list` / `_get_json` / `_post` / `_delete`):
+
+   ```python
+   async def config(self, uuid: str) -> Config:
+       return await self._client._get(f"3.0/mosque/{uuid}/config", cast_to=Config)
+   ```
 2. Run `python scripts/generate.py` to regenerate the sync mirror.
 3. Add the `(METHOD, path)` to `IMPLEMENTED` in `tests/test_contract.py` and a
    respx test in `tests/test_resources_async.py`.
