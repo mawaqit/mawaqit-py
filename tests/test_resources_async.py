@@ -15,7 +15,7 @@ BASE = "https://api.test/"
 
 
 def client() -> AsyncMawaqitClient:
-    return AsyncMawaqitClient(base_url=BASE, token="t")
+    return AsyncMawaqitClient(api_base_url=BASE, token="t")
 
 
 # --------------------------------------------------------------------------- #

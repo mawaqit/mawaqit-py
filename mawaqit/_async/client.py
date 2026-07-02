@@ -15,7 +15,7 @@ import httpx
 from pydantic import BaseModel
 
 from .._transport import API_TOKEN_HEADER, raise_for_status
-from ..config import ENVIRONMENT_BASE_URLS, Environment, MawaqitSettings
+from ..config import MawaqitSettings
 from ..exceptions import BadCredentialsException, MawaqitException, MissingCredentials
 from .resources.v2 import AsyncV2
 from .resources.v3 import AsyncV3
@@ -47,8 +47,7 @@ class AsyncMawaqitClient:
         token: str | None = None,
         username: str | None = None,
         password: str | None = None,
-        base_url: str | None = None,
-        environment: Environment | None = None,
+        api_base_url: str | None = None,
         settings: MawaqitSettings | None = None,
         http_client: httpx.AsyncClient | None = None,
         timeout: float = 10.0,
@@ -57,12 +56,11 @@ class AsyncMawaqitClient:
         self._settings = settings or MawaqitSettings()
         self._max_retries = max_retries
 
-        if base_url is None:
-            if environment is not None:
-                base_url = ENVIRONMENT_BASE_URLS[environment]
-            else:
-                base_url = self._settings.resolve_base_url()
-        self._base_url = base_url if base_url.endswith("/") else base_url + "/"
+        if api_base_url is None:
+            api_base_url = self._settings.resolve_base_url()
+        self._base_url = (
+            api_base_url if api_base_url.endswith("/") else api_base_url + "/"
+        )
 
         self.token = token or self._settings.token
         self.username = username or self._settings.username

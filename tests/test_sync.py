@@ -37,7 +37,7 @@ def test_sync_login_then_v2_and_v3_calls_share_token() -> None:
         return_value=httpx.Response(200, json=build_sample(m3.Times))
     )
 
-    with MawaqitClient(base_url=BASE, username="u", password="p") as client:
+    with MawaqitClient(api_base_url=BASE, username="u", password="p") as client:
         assert isinstance(client.v2.mosque.weather("u1"), m2.Weather)
         assert isinstance(client.v3.mosque.times("u1"), m3.Times)
         assert client.v2 is client.v2  # cached namespace
@@ -50,7 +50,7 @@ def test_sync_login_then_v2_and_v3_calls_share_token() -> None:
 @respx.mock
 def test_sync_error_mapping() -> None:
     respx.get(BASE + "3.0/mosque/missing/info").mock(return_value=httpx.Response(404))
-    client = MawaqitClient(base_url=BASE, token="t")
+    client = MawaqitClient(api_base_url=BASE, token="t")
     with pytest.raises(NotFoundException):
         client.v3.mosque.info("missing")
     client.close()
@@ -58,7 +58,7 @@ def test_sync_error_mapping() -> None:
 
 def test_sync_injected_client_is_not_closed() -> None:
     injected = httpx.Client()
-    client = MawaqitClient(base_url=BASE, token="t", http_client=injected)
+    client = MawaqitClient(api_base_url=BASE, token="t", http_client=injected)
     client.close()
     assert not injected.is_closed
     injected.close()
