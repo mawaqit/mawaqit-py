@@ -8,7 +8,7 @@ import respx
 
 from mawaqit._async.client import AsyncMawaqitClient
 from mawaqit._transport import query_params
-from mawaqit.config import DEFAULT_API_BASE_URL, MawaqitSettings
+from mawaqit.config import DEFAULT_API_BASE_URL
 from mawaqit.exceptions import (
     BadCredentialsException,
     MawaqitException,
@@ -227,14 +227,23 @@ async def test_base_url_defaults_to_the_default() -> None:
     await client.close()
 
 
-async def test_base_url_from_settings() -> None:
-    settings = MawaqitSettings(api_base_url="https://s/api/")
-    client = AsyncMawaqitClient(settings=settings)
-    assert client._base_url == "https://s/api/"
-    await client.close()
-
-
 async def test_api_base_url_trailing_slash_is_added() -> None:
     client = AsyncMawaqitClient(api_base_url="https://x/api", token="t")
     assert client._base_url == "https://x/api/"
+    await client.close()
+
+
+async def test_settings_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MAWAQIT_API_BASE_URL", "https://env/api/")
+    monkeypatch.setenv("MAWAQIT_TOKEN", "envtok")
+    client = AsyncMawaqitClient()  # no args -> everything from env
+    assert client._base_url == "https://env/api/"
+    assert client.token == "envtok"
+    await client.close()
+
+
+async def test_explicit_arg_overrides_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MAWAQIT_TOKEN", "envtok")
+    client = AsyncMawaqitClient(token="argtok")
+    assert client.token == "argtok"
     await client.close()

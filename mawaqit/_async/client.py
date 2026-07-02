@@ -48,23 +48,30 @@ class AsyncMawaqitClient:
         username: str | None = None,
         password: str | None = None,
         api_base_url: str | None = None,
-        settings: MawaqitSettings | None = None,
         http_client: httpx.AsyncClient | None = None,
         timeout: float = 10.0,
         max_retries: int = 2,
     ) -> None:
-        self._settings = settings or MawaqitSettings()
+        # Constructor args are just overrides for MawaqitSettings; only the ones
+        # actually provided are passed, so a None here never shadows an env var
+        # (explicit arg > MAWAQIT_* env / .env > default).
+        overrides = {
+            "api_base_url": api_base_url,
+            "token": token,
+            "username": username,
+            "password": password,
+        }
+        self._settings = MawaqitSettings(
+            **{key: value for key, value in overrides.items() if value is not None}
+        )
         self._max_retries = max_retries
 
-        if api_base_url is None:
-            api_base_url = self._settings.resolve_base_url()
-        self._base_url = (
-            api_base_url if api_base_url.endswith("/") else api_base_url + "/"
-        )
+        base_url = self._settings.resolve_base_url()
+        self._base_url = base_url if base_url.endswith("/") else base_url + "/"
 
-        self.token = token or self._settings.token
-        self.username = username or self._settings.username
-        self.password = password or self._settings.password
+        self.token = self._settings.token
+        self.username = self._settings.username
+        self.password = self._settings.password
 
         # Absolute URLs are built from ``_base_url``, so an injected client is
         # used as-is (its own base_url, if any, is irrelevant). This is what lets
