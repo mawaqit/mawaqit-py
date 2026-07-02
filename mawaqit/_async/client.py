@@ -16,19 +16,18 @@ from pydantic import BaseModel
 
 from .._transport import API_TOKEN_HEADER, raise_for_status
 from ..config import MawaqitSettings
+from ..constants import (
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_TIMEOUT,
+    LOGIN_BACKOFF_CAP,
+    LOGIN_PATH,
+    MAX_LOGIN_RETRIES,
+    RETRY_BACKOFF_CAP,
+    RETRY_STATUSES,
+)
 from ..exceptions import BadCredentialsException, MawaqitException, MissingCredentials
 from .resources.v2 import AsyncV2
 from .resources.v3 import AsyncV3
-
-#: Basic-auth login endpoint (relative to the base URL). Login always uses v2.
-LOGIN_PATH = "2.0/me"
-
-#: How many times ``get_api_token`` retries a *transient* login failure before
-#: giving up, with exponential backoff capped at 16s.
-MAX_LOGIN_RETRIES = 20
-
-#: Response statuses worth retrying (transient server/rate-limit errors).
-RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -36,42 +35,29 @@ ModelT = TypeVar("ModelT", bound=BaseModel)
 class AsyncMawaqitClient:
     """Async entrypoint to the MAWAQIT API.
 
-    Authentication is centralised here: a single token (supplied directly or
-    obtained via basic-auth login) is shared by every API version. Reach the
-    versioned resources through :attr:`v2` and :attr:`v3`.
+    The client authenticates with a single API token, shared by every API
+    version and reached through :attr:`v2` / :attr:`v3`. Pass ``token=`` (or set
+    ``MAWAQIT_TOKEN``); if all you have is a username/password, exchange them for
+    a token first with :func:`login`. The client never stores credentials — only
+    the token it uses.
     """
 
     def __init__(
         self,
         *,
         token: str | None = None,
-        username: str | None = None,
-        password: str | None = None,
         api_base_url: str | None = None,
         http_client: httpx.AsyncClient | None = None,
-        timeout: float = 10.0,
-        max_retries: int = 2,
+        timeout: float = DEFAULT_TIMEOUT,
+        max_retries: int = DEFAULT_MAX_RETRIES,
     ) -> None:
-        # Constructor args are just overrides for MawaqitSettings; only the ones
-        # actually provided are passed, so a None here never shadows an env var
-        # (explicit arg > MAWAQIT_* env / .env > default).
-        overrides = {
-            "api_base_url": api_base_url,
-            "token": token,
-            "username": username,
-            "password": password,
-        }
-        self._settings = MawaqitSettings(
-            **{key: value for key, value in overrides.items() if value is not None}
-        )
+        # Resolve configuration once (explicit arg > MAWAQIT_* env / .env >
+        # default). After this the client owns its resolved state; the settings
+        # object is not kept around, so each value lives in exactly one place.
+        config = MawaqitSettings.load(api_base_url=api_base_url, token=token)
+        self._base_url = config.api_base_url
+        self._token = config.token
         self._max_retries = max_retries
-
-        base_url = self._settings.resolve_base_url()
-        self._base_url = base_url if base_url.endswith("/") else base_url + "/"
-
-        self.token = self._settings.token
-        self.username = self._settings.username
-        self.password = self._settings.password
 
         # Absolute URLs are built from ``_base_url``, so an injected client is
         # used as-is (its own base_url, if any, is irrelevant). This is what lets
@@ -81,6 +67,11 @@ class AsyncMawaqitClient:
 
         self._v2: AsyncV2 | None = None
         self._v3: AsyncV3 | None = None
+
+    @property
+    def token(self) -> str | None:
+        """The access token in plaintext, or ``None`` if none was configured."""
+        return self._token.get_secret_value() if self._token is not None else None
 
     @property
     def v2(self) -> AsyncV2:
@@ -112,37 +103,6 @@ class AsyncMawaqitClient:
         if self._close_http:
             await self._http.aclose()
 
-    async def get_api_token(self) -> str:
-        """Return a valid API token, logging in (with retries) if needed."""
-        if self.token is not None:
-            return self.token
-
-        for attempt in range(MAX_LOGIN_RETRIES):
-            try:
-                await self.login()
-            except (BadCredentialsException, MissingCredentials):
-                raise
-            except MawaqitException:
-                if attempt == MAX_LOGIN_RETRIES - 1:
-                    raise
-                await sleep(min(16, 2**attempt))
-            else:
-                if self.token is not None:
-                    return self.token
-
-        raise MawaqitException("Could not obtain an API token.")  # pragma: no cover
-
-    async def login(self) -> None:
-        """Obtain and cache an API token via HTTP basic auth."""
-        if self.username is None or self.password is None:
-            raise MissingCredentials("Please provide a MAWAQIT username and password.")
-
-        response = await self._http.post(
-            self._base_url + LOGIN_PATH, auth=(self.username, self.password)
-        )
-        raise_for_status(response)
-        self.token = response.json()["apiAccessToken"]
-
     async def _request(
         self,
         method: str,
@@ -155,7 +115,12 @@ class AsyncMawaqitClient:
         """Send a request with retries, injecting auth and mapping errors."""
         headers: dict[str, str] = {}
         if authenticated:
-            headers[API_TOKEN_HEADER] = await self.get_api_token()
+            if self._token is None:
+                raise MissingCredentials(
+                    "No API token. Pass token=... (or set MAWAQIT_TOKEN); if you "
+                    "only have a username/password, get a token with login()."
+                )
+            headers[API_TOKEN_HEADER] = self._token.get_secret_value()
 
         url = self._base_url + path
         for attempt in range(self._max_retries + 1):
@@ -173,7 +138,7 @@ class AsyncMawaqitClient:
                 if not (response.status_code in RETRY_STATUSES and not final):
                     raise_for_status(response)
                     return response
-            await sleep(min(8, 2**attempt))
+            await sleep(min(RETRY_BACKOFF_CAP, 2**attempt))
 
         raise MawaqitException("unreachable")  # pragma: no cover
 
@@ -217,3 +182,50 @@ class AsyncMawaqitClient:
     async def _delete(self, path: str) -> None:
         """DELETE ``path`` (endpoints with no response body)."""
         await self._request("DELETE", path)
+
+
+async def login(
+    username: str | None = None,
+    password: str | None = None,
+    *,
+    api_base_url: str | None = None,
+    http_client: httpx.AsyncClient | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> str:
+    """Exchange a MAWAQIT username/password for an API token.
+
+    A standalone primitive: the credentials live only for the duration of this
+    call (nothing keeps them afterwards). Transient failures are retried with
+    exponential backoff; bad credentials fail fast. Both arguments fall back to
+    ``MAWAQIT_USERNAME`` / ``MAWAQIT_PASSWORD``, and the target to
+    ``MAWAQIT_API_BASE_URL``. Pass ``http_client`` to reuse a shared session
+    (it is left open); otherwise a temporary one is created and closed.
+    """
+    config = MawaqitSettings.load(
+        api_base_url=api_base_url, username=username, password=password
+    )
+    if config.username is None or config.password is None:
+        raise MissingCredentials("Please provide a MAWAQIT username and password.")
+
+    http = http_client or httpx.AsyncClient(timeout=timeout)
+    url = config.api_base_url + LOGIN_PATH
+    auth = (config.username, config.password.get_secret_value())
+    try:
+        for attempt in range(MAX_LOGIN_RETRIES):
+            try:
+                response = await http.post(url, auth=auth)
+                raise_for_status(response)
+            except BadCredentialsException:
+                raise
+            except MawaqitException:
+                if attempt == MAX_LOGIN_RETRIES - 1:
+                    raise
+                await sleep(min(LOGIN_BACKOFF_CAP, 2**attempt))
+            else:
+                token: str = response.json()["apiAccessToken"]
+                return token
+    finally:
+        if http_client is None:
+            await http.aclose()
+
+    raise MawaqitException("Could not obtain an API token.")  # pragma: no cover

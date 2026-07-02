@@ -15,7 +15,9 @@ drift. Reach each API version through ``client.v2`` / ``client.v3``.
 """
 
 from ._async import AsyncMawaqitClient
+from ._async import login as login
 from ._sync import MawaqitClient
+from ._sync import login as login_sync
 from .config import MawaqitSettings
 from .exceptions import (
     BadCredentialsException,
@@ -27,6 +29,8 @@ from .exceptions import (
 __all__ = [
     "AsyncMawaqitClient",
     "MawaqitClient",
+    "login",
+    "login_sync",
     "MawaqitSettings",
     "MawaqitException",
     "BadCredentialsException",

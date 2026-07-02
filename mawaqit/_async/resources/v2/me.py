@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from mawaqit._generated import v2 as models
 
-if TYPE_CHECKING:
-    from ...client import AsyncMawaqitClient
+from .._base import Resource
 
 
-class MeResource:
+class MeResource(Resource):
     """Authenticated-user endpoint of the v2 API."""
 
-    def __init__(self, client: AsyncMawaqitClient) -> None:
-        self._client = client
+    prefix = "2.0/me"
 
     async def get(self) -> models.Me:
         """The authenticated user's id, token and API quota."""
-        return await self._client._get("2.0/me", cast_to=models.Me)
+        return await self._get(cast_to=models.Me)

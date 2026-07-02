@@ -13,6 +13,7 @@ import respx
 from _samples import build_sample
 
 from mawaqit import MawaqitClient
+from mawaqit import login_sync as login
 from mawaqit._generated import v2 as m2
 from mawaqit._generated import v3 as m3
 from mawaqit.exceptions import NotFoundException
@@ -27,7 +28,7 @@ def test_sync_client_is_distinct_from_async() -> None:
 
 @respx.mock
 def test_sync_login_then_v2_and_v3_calls_share_token() -> None:
-    login = respx.post(BASE + "2.0/me").mock(
+    login_route = respx.post(BASE + "2.0/me").mock(
         return_value=httpx.Response(200, json={"apiAccessToken": "tok"})
     )
     weather = respx.get(BASE + "2.0/mosque/u1/weather").mock(
@@ -37,12 +38,14 @@ def test_sync_login_then_v2_and_v3_calls_share_token() -> None:
         return_value=httpx.Response(200, json=build_sample(m3.Times))
     )
 
-    with MawaqitClient(api_base_url=BASE, username="u", password="p") as client:
+    token = login("u", "p", api_base_url=BASE)  # sync login primitive
+    with MawaqitClient(api_base_url=BASE, token=token) as client:
         assert isinstance(client.v2.mosque.weather("u1"), m2.Weather)
         assert isinstance(client.v3.mosque.times("u1"), m3.Times)
         assert client.v2 is client.v2  # cached namespace
 
-    assert login.called
+    assert login_route.called
+    assert token == "tok"
     assert weather.calls.last.request.headers["Api-Access-Token"] == "tok"
     assert times.calls.last.request.headers["Api-Access-Token"] == "tok"
 
