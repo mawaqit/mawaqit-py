@@ -125,6 +125,21 @@ async def test_v2_statistic_favorite_and_unfavorite() -> None:
 
 
 @respx.mock
+async def test_v2_mosque_favorite_aliases() -> None:
+    fav = respx.post(BASE + "2.0/statistic/mosque/u1/favorite").mock(
+        return_value=httpx.Response(204)
+    )
+    unfav = respx.delete(BASE + "2.0/statistic/mosque/u1/favorite").mock(
+        return_value=httpx.Response(204)
+    )
+    c = client()
+    assert await c.v2.mosque.favorite("u1") is None
+    assert await c.v2.mosque.unfavorite("u1") is None
+    assert fav.called and unfav.called
+    await c.close()
+
+
+@respx.mock
 async def test_v2_support() -> None:
     respx.get(BASE + "2.0/support").mock(
         return_value=httpx.Response(200, json=build_sample(m2.Support))
