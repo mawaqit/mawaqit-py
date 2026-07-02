@@ -171,6 +171,44 @@ async def test_login_exhausts_retries(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @respx.mock
+async def test_login_retries_network_error_then_succeeds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slept: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        slept.append(delay)
+
+    monkeypatch.setattr("mawaqit._async.client.sleep", fake_sleep)
+    respx.post("https://api.test/2.0/me").mock(
+        side_effect=[
+            httpx.ConnectError("boom"),
+            httpx.Response(200, json={"apiAccessToken": "tok3"}),
+        ]
+    )
+    assert await login("u", "p", api_base_url=BASE) == "tok3"
+    assert slept == [1]
+
+
+@respx.mock
+async def test_login_exhausts_retries_on_network_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("mawaqit._async.client.sleep", lambda _delay: _noop())
+    respx.post("https://api.test/2.0/me").mock(side_effect=httpx.ConnectError("boom"))
+    with pytest.raises(MawaqitException):
+        await login("u", "p", api_base_url=BASE)
+
+
+@respx.mock
+async def test_login_not_found_is_not_retried() -> None:
+    route = respx.post("https://api.test/2.0/me").mock(return_value=httpx.Response(404))
+    with pytest.raises(NotFoundException):
+        await login("u", "p", api_base_url=BASE)
+    assert route.call_count == 1  # non-transient status, no retry
+
+
+@respx.mock
 async def test_login_reuses_injected_client_without_closing() -> None:
     respx.post("https://api.test/2.0/me").mock(
         return_value=httpx.Response(200, json={"apiAccessToken": "t"})
