@@ -16,7 +16,13 @@ class HadithResource(Resource):
     async def random(
         self, *, lang: str | None = None, max_length: int | None = None
     ) -> models.Hadith:
-        """A random hadith, optionally filtered by language and max length."""
+        """A random hadith, optionally filtered by language and max length.
+
+        Args:
+            lang: Hadith language — one of ``"ar"``, ``"en"``, ``"fr"``, ``"tr"``,
+                ``"en-ar"``, ``"fr-ar"``, ``"tr-ar"`` (default ``"ar"``).
+            max_length: Max hadith length in characters (default 500).
+        """
         return await self._get(
             "random",
             params=query_params(lang=lang, maxLength=max_length),
