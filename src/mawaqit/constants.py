@@ -19,7 +19,8 @@ DEFAULT_MAX_RETRIES = 2
 LOGIN_PATH = "2.0/me"
 
 #: How many times ``login`` retries a *transient* failure before giving up.
-MAX_LOGIN_RETRIES = 20
+#: Bounded so the worst-case backoff stays short (1+2+4+8 = 15s of sleeps).
+MAX_LOGIN_RETRIES = 5
 
 #: Response statuses worth retrying (transient server/rate-limit errors).
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})

@@ -1,5 +1,10 @@
 name: Upload Python Package
 
+# Publishes to the real PyPI on a published GitHub Release. Pre-releases (rc/beta/
+# alpha/dev version tags) are published here too, exactly like Django/pydantic/numpy:
+# `pip install` ignores them by default, so only `pip install --pre` picks them up.
+# TestPyPI is intentionally NOT in this path — see publish-testpypi.yml for the
+# separate, opt-in packaging rehearsal.
 on:
   release:
     types: [published]
@@ -11,16 +16,20 @@ jobs:
   Test:
     uses: ./.github/workflows/test.yml
 
-  Check-Version-Regex:
+  Check-Version-Format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Check version format
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-          if [[ ! $VERSION =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-            echo "Error: Version '$VERSION' does not match the required format (e.g., 1.0.0, 2.1, 3.0.1.2)"
+          # MAJOR.MINOR.PATCH with optional PEP 440 pre/post/dev suffixes
+          # (e.g. 1.0.0, 1.2.0rc1, 2.0.0b2, 1.0.0.dev3, 1.4.1.post1).
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?(\.post[0-9]+)?(\.dev[0-9]+)?$ ]]; then
+            echo "Error: Version '$VERSION' is not a valid PEP 440 release (e.g. 1.0.0, 1.2.0rc1, 2.0.0.dev1)"
             exit 1
           fi
           echo "Version '$VERSION' is valid"
@@ -28,11 +37,13 @@ jobs:
   Release-Build:
     runs-on: ubuntu-latest
     needs:
-      - Check-Version-Regex
+      - Check-Version-Format
       - Test
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v6
         with:
@@ -85,31 +96,6 @@ jobs:
           print('smoke OK', mawaqit.__file__)
           "
 
-  TestPyPI-Publish:
-    runs-on: ubuntu-latest
-    needs:
-      - Release-Build
-      - Smoke-Install
-    permissions:
-      id-token: write
-    environment:
-      name: pypi
-      url: https://test.pypi.org/p/mawaqit
-
-    steps:
-      - name: Retrieve release distributions
-        uses: actions/download-artifact@v4
-        with:
-          name: release-dists
-          path: dist/
-
-      - name: Publish release distributions to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
-          repository-url: https://test.pypi.org/legacy/
-          verbose: true
-
   PyPI-Publish:
     runs-on: ubuntu-latest
     needs:
@@ -118,7 +104,7 @@ jobs:
     permissions:
       id-token: write
     environment:
-      name: pypi
+      name: Production-PyPI
       url: https://pypi.org/p/mawaqit
 
     steps:

@@ -85,9 +85,14 @@ base paths stay aligned — they fail when a regenerated spec drifts from the re
 
 ## Releases
 
-`.github/workflows/python-publish.yml` runs on a **published GitHub Release**: it validates the tag,
-runs the suite, builds with `VERSION` set to the tag, **smoke-installs the wheel in a clean venv**
-(guards against a wheel missing the generated code), then publishes to TestPyPI and PyPI via trusted
-publishing. `regenerate-on-api-release.yml` reacts to the backend's `repository_dispatch`
+`.github/workflows/python-publish.yml` runs on a **published GitHub Release**: it validates the tag
+(PEP 440 `X.Y.Z` with optional `rc`/`b`/`a`/`.dev`/`.post` suffix), runs the suite, builds with
+`VERSION` set to the tag, **smoke-installs the wheel in a clean venv** (guards against a wheel missing
+the generated code), then publishes to **PyPI only** via trusted publishing. Pre-release version tags
+publish to PyPI too (like Django/pydantic/numpy) — `pip` ignores them unless `--pre` is passed, so
+there is no separate TestPyPI channel in the release path. `publish-testpypi.yml` is a **separate,
+opt-in packaging rehearsal** (manual `workflow_dispatch`, or the `test-publish` label on a PR) that
+stamps a disposable, unique `<base>.dev<run_number>` version and pushes it to TestPyPI with
+`skip-existing`. `regenerate-on-api-release.yml` reacts to the backend's `repository_dispatch`
 (`api-spec-updated`) to refresh specs, regenerate, run the suite, and open a PR. `test.yml` runs
 across Python 3.10–3.14 plus latest stable.

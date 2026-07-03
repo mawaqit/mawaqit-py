@@ -8,11 +8,11 @@ repos:
         entry: python scripts/generate.py
         language: python
         additional_dependencies:
-          - datamodel-code-generator>=0.25
+          - datamodel-code-generator[ruff]>=0.25
           - unasync>=0.6
           - pyyaml
         # Rerun whenever a spec or the async source (its input) changes.
-        files: ^(swagger/|mawaqit/_async/|scripts/generate\.py)
+        files: ^(swagger/|src/mawaqit/_async/|scripts/generate\.py)
         pass_filenames: false
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
