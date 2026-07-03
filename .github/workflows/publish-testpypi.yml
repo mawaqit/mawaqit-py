@@ -1,4 +1,4 @@
-name: Rehearse publish on TestPyPI
+name: Publish on TestPyPI
 
 # Opt-in packaging rehearsal — NOT part of a real release. Use it to validate the
 # build, metadata rendering and trusted-publishing (OIDC) setup against TestPyPI
@@ -9,11 +9,6 @@ name: Rehearse publish on TestPyPI
 # Note: the PR-label trigger only works for branches pushed to this repo (not
 # forks) — GitHub does not grant the OIDC `id-token` needed for trusted publishing
 # to fork-based pull requests.
-#
-# The version published to TestPyPI is disposable: we never reuse a real release
-# number (TestPyPI is immutable per version, like PyPI). Instead we append a unique
-# `.dev<run_number>` segment, so every rehearsal gets a fresh, PEP 440-valid dev
-# version that `pip install` ignores by default.
 on:
   workflow_dispatch:
     inputs:
@@ -35,7 +30,7 @@ jobs:
     permissions:
       id-token: write
     environment:
-      name: Test-PyPI
+      name: pypi
       url: https://test.pypi.org/p/mawaqit
 
     steps:
