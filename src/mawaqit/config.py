@@ -1,7 +1,8 @@
 """Configuration for the MAWAQIT client.
 
 Settings resolve in order of precedence: explicit constructor arguments, then
-``MAWAQIT_*`` environment variables / a ``.env`` file, then the defaults here.
+``MAWAQIT_*`` environment variables, then the defaults here. Loading a ``.env``
+file is left to the application (e.g. python-dotenv), as with other SDKs.
 Point the client at a staging/local deployment with ``MAWAQIT_API_BASE_URL``.
 """
 

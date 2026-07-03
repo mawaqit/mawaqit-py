@@ -51,7 +51,7 @@ class AsyncMawaqitClient:
         timeout: float = DEFAULT_TIMEOUT,
         max_retries: int = DEFAULT_MAX_RETRIES,
     ) -> None:
-        # Resolve configuration once (explicit arg > MAWAQIT_* env / .env >
+        # Resolve configuration once (explicit arg > MAWAQIT_* env >
         # default). After this the client owns its resolved state; the settings
         # object is not kept around, so each value lives in exactly one place.
         config = MawaqitSettings.load(api_base_url=api_base_url, token=token)
@@ -223,7 +223,11 @@ async def login(
             else:
                 if not (response.status_code in RETRY_STATUSES and not final):
                     raise_for_status(response)
-                    token: str = response.json()["apiAccessToken"]
+                    token = response.json().get("apiAccessToken")
+                    if not isinstance(token, str):
+                        raise MawaqitException(
+                            "Login succeeded but the response had no API token."
+                        )
                     return token
             await sleep(min(LOGIN_BACKOFF_CAP, 2**attempt))
     finally:

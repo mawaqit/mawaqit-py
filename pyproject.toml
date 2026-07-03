@@ -1,7 +1,7 @@
 [build-system]
 # Model/sync generation runs inside the build (see hatch_build.py), so the
 # generators must be available in the isolated build environment.
-requires = ["hatchling", "datamodel-code-generator>=0.25", "unasync>=0.6"]
+requires = ["hatchling", "datamodel-code-generator[ruff]>=0.25", "unasync>=0.6"]
 build-backend = "hatchling.build"
 
 [project]
@@ -34,7 +34,7 @@ Repository = "https://github.com/mawaqit/mawaqit-py"
 [project.optional-dependencies]
 # Everything needed to (re)generate the gitignored code from the swagger specs.
 codegen = [
-    "datamodel-code-generator>=0.25",
+    "datamodel-code-generator[ruff]>=0.25",
     "unasync>=0.6",
 ]
 test = [

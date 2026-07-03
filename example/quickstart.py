@@ -1,7 +1,7 @@
 """Quickstart: search a mosque, then read its v2 and v3 prayer times.
 
 Run with:
-    MAWAQIT_TOKEN=... python examples/quickstart.py
+    MAWAQIT_TOKEN=... python example/quickstart.py
 """
 
 from __future__ import annotations

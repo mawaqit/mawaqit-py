@@ -143,6 +143,15 @@ async def test_login_bad_credentials_not_retried() -> None:
 
 
 @respx.mock
+async def test_login_200_without_token_raises_mawaqit_exception() -> None:
+    respx.post("https://api.test/2.0/me").mock(
+        return_value=httpx.Response(200, json={"unexpected": "body"})
+    )
+    with pytest.raises(MawaqitException):
+        await login("u", "p", api_base_url=BASE)
+
+
+@respx.mock
 async def test_login_retries_transient_then_succeeds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

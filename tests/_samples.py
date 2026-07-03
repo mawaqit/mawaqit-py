@@ -24,8 +24,10 @@ def _value_for(annotation: Any) -> Any:
     if origin is list:
         args = get_args(annotation)
         return [_value_for(args[0])] if args else []
-    if origin in (dict, tuple):
+    if origin is dict:
         return {}
+    if origin is tuple:
+        return tuple(_value_for(arg) for arg in get_args(annotation) if arg is not ...)
     if annotation is Any:
         return "sample"
     if isinstance(annotation, type) and issubclass(annotation, BaseModel):

@@ -1,0 +1,93 @@
+name: Rehearse publish on TestPyPI
+
+# Opt-in packaging rehearsal — NOT part of a real release. Use it to validate the
+# build, metadata rendering and trusted-publishing (OIDC) setup against TestPyPI
+# without touching the real PyPI. Trigger it either:
+#   * manually (Actions tab -> Run workflow), optionally passing a base version, or
+#   * by adding the `test-publish` label to a pull request.
+#
+# Note: the PR-label trigger only works for branches pushed to this repo (not
+# forks) — GitHub does not grant the OIDC `id-token` needed for trusted publishing
+# to fork-based pull requests.
+#
+# The version published to TestPyPI is disposable: we never reuse a real release
+# number (TestPyPI is immutable per version, like PyPI). Instead we append a unique
+# `.dev<run_number>` segment, so every rehearsal gets a fresh, PEP 440-valid dev
+# version that `pip install` ignores by default.
+on:
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: "Base version to stamp (a .dev<run> suffix is appended)"
+        required: false
+        default: "0.0.0"
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  TestPyPI-Publish:
+    # Manual runs always; PR runs only when the trigger is the `test-publish` label.
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'test-publish'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    environment:
+      name: Test-PyPI
+      url: https://test.pypi.org/p/mawaqit
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Resolve a unique disposable TestPyPI version
+        run: |
+          # From the manual input, or a disposable 0.0.0 base for the PR-label run.
+          BASE="${{ github.event.inputs.base_version }}"
+          if [ -z "$BASE" ]; then
+            BASE="0.0.0"
+          fi
+          if [[ ! $BASE =~ ^[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?$ ]]; then
+            echo "Error: base version '$BASE' is not a valid X.Y.Z[pre] version"
+            exit 1
+          fi
+          VERSION="${BASE}.dev${GITHUB_RUN_NUMBER}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Rehearsing publish of $VERSION to TestPyPI"
+
+      - name: Build distributions
+        run: |
+          python -m pip install build
+          python -m build
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: Install the wheel in a clean venv and import it
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install --upgrade pip
+          /tmp/smoke/bin/pip install dist/*.whl
+          /tmp/smoke/bin/python -c "
+          import mawaqit
+          from mawaqit import AsyncMawaqitClient, MawaqitClient
+          c = MawaqitClient(token='x')
+          assert c.v2.mosque and c.v3.mosque
+          from mawaqit._generated import v2, v3
+          assert v2.Mosque and v3.Times
+          print('smoke OK', mawaqit.__version__ if hasattr(mawaqit, '__version__') else mawaqit.__file__)
+          "
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+          verbose: true
