@@ -52,12 +52,6 @@ VERSIONS = {"2.0": "v2", "3.0": "v3"}
 # while the API routinely returns them null/absent. Keeping these required gives
 # the golden path good DX (e.g. mosque.uuid stays ``str``, not ``str | None``,
 # so it can be passed straight to the next call).
-#
-# ``id`` is deliberately excluded: the spec marks it required on ``Mosque``,
-# but the real `/2.0/mosque/search` (and `/2.0/mosque`) response omits it
-# entirely — only ``uuid`` is guaranteed there. Detail endpoints (prayer-times,
-# v3 info) do return ``id``, but nothing here can crash on real data if it
-# stays optional everywhere.
 ALWAYS_REQUIRED = {"uuid", "name", "slug"}
 
 
