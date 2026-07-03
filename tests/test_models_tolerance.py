@@ -27,7 +27,14 @@ def test_empty_payload_validates() -> None:
 
 def test_identity_fields_remain_required() -> None:
     required = {n for n, f in v2.Mosque.model_fields.items() if f.is_required()}
-    assert required == {"id", "uuid", "name"}
+    assert required == {"uuid", "name"}
+
+
+def test_mosque_validates_without_id() -> None:
+    # The real /2.0/mosque/search response omits `id` entirely; only detail
+    # endpoints (prayer-times, v3 info) include it. `id` must stay optional.
+    mosque = v2.Mosque.model_validate({"uuid": "u", "name": "Essunna"})
+    assert mosque.id is None
 
 
 def test_camelcase_json_parses_into_snake_case_attributes() -> None:

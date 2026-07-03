@@ -14,7 +14,11 @@ class SupportResource(Resource):
     prefix = "2.0/support"
 
     async def get(self, *, country: str | None = None) -> models.Support:
-        """WhatsApp support URLs, optionally for a specific country."""
+        """WhatsApp support URLs, optionally for a specific country.
+
+        Args:
+            country: The country code to get support URLs for.
+        """
         return await self._get(
             params=query_params(country=country),
             cast_to=models.Support,

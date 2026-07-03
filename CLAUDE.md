@@ -55,15 +55,14 @@ VERSION=3.0.0 python -m build      # build hook regenerates + force-includes gen
   (`_get`/`_get_list`/`_get_json`/`_post`/`_delete(cast_to=...)`); `v2.py`/`v3.py` hold resource
   methods that are each one typed line calling a helper. Adding an endpoint is a ~3-line method.
 - **Robustness (like OpenAI/Anthropic SDKs).** Generated models subclass `MawaqitModel`
-  (`extra="allow"`) and keep only identity fields (`id`/`uuid`/`name`/`slug`) required — the
+  (`extra="allow"`) and keep only identity fields (`uuid`/`name`/`slug`) required — the
   normalizer in `scripts/generate.py` demotes the rest — so responses never crash on null/absent/new
   fields. `_request` retries transient failures (network + `429/500/502/503/504`) with backoff.
 - **Shared, non-transformed modules** live at `mawaqit/` top-level: `config.py` (pydantic-settings,
   `MAWAQIT_API_BASE_URL`), `constants.py` (transport tuning + endpoints, defined once and imported by
   both trees), `exceptions.py`, `_transport.py` (status→exception mapping, `query_params`,
   `API_TOKEN_HEADER` — httpx uses one `Response` type for sync and async, so these are written once),
-  `responses.py` (the one inline-schema response model), and `cli.py` (the `mawaqit-py` console
-  script — a sync `login` command that prints a token; prompts to stderr, token to stdout).
+  `responses.py` (the one inline-schema response model).
 - **Authentication is token-only on the client.** The client holds a single API token (as a
   `SecretStr`, from `token=` or `MAWAQIT_TOKEN`), shared by v2 and v3 and sent as the
   `Api-Access-Token` header; an authenticated request with no token raises `MissingCredentials`.

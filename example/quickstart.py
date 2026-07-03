@@ -1,11 +1,5 @@
 """Quickstart: search a mosque, then read its v2 and v3 prayer times.
 
-Auth resolves from the environment:
-  MAWAQIT_TOKEN - read directly by AsyncMawaqitClient()
-
-No token yet? Get one without writing any code:
-    export MAWAQIT_TOKEN=$(mawaqit-py login)
-
 Run with:
     MAWAQIT_TOKEN=... python examples/quickstart.py
 """
@@ -14,15 +8,14 @@ from __future__ import annotations
 
 import asyncio
 
+from dotenv import load_dotenv
+
 from mawaqit import AsyncMawaqitClient, MawaqitException
+
+load_dotenv()
 
 
 async def main() -> None:
-    # AsyncMawaqitClient() with no args reads MAWAQIT_TOKEN from the environment.
-    # If you only have credentials, exchange them for a token first:
-    #     from mawaqit import async_login
-    #     token = await async_login("me@example.com", "password")
-    #     client = AsyncMawaqitClient(token=token)
     async with AsyncMawaqitClient() as client:
         # v2: search mosques near a location (Paris, here)
         mosques = await client.v2.mosque.search(lat=48.8582, lon=2.2945)

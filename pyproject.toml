@@ -26,9 +26,6 @@ dependencies = [
     "pydantic-settings>=2.1",
 ]
 
-[project.scripts]
-mawaqit-py = "mawaqit.cli:main"
-
 [project.urls]
 Homepage = "https://mawaqit.net"
 Repository = "https://github.com/mawaqit/mawaqit-py"
