@@ -30,7 +30,7 @@ jobs:
     permissions:
       id-token: write
     environment:
-      name: Test-PyPI
+      name: Test
       url: https://test.pypi.org/p/mawaqit
 
     steps:
