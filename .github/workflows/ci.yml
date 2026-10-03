@@ -24,7 +24,8 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: false
-      - run: uv sync --locked
+      # The codegen group too: mypy checks the generator.
+      - run: uv sync --locked --all-groups
       - run: uv run ruff check --output-format=github .
       - run: uv run ruff format --check .
       - run: uv run mypy
