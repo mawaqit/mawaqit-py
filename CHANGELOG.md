@@ -29,7 +29,6 @@ A new library, generated from the OpenAPI description of the API.
 | 1.x | 2.0 |
 | --- | --- |
 | `AsyncMawaqitClient(session=session)` | `AsyncMawaqitClient(http_client=httpx_client)` |
-| `await client.get_api_token()` | `(await client.auth.login(email=..., password=...)).api_access_token` |
 | `await client.all_mosques_neighborhood()` | `await client.mosques.search(lat=..., lon=...)` |
 | `await client.fetch_mosques_by_keyword(word, page, size)` | `await client.mosques.search(word=word, page=page, items_per_page=size)` |
 | `await client.fetch_prayer_times()` | `await client.mosques.prayer_times(uuid)` |

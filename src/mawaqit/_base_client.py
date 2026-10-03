@@ -71,9 +71,9 @@ class BaseClient(ABC, Generic[HttpClientT]):
         """Create a client.
 
         Args:
-            token: API token of a MAWAQIT account, from `auth.login()`. Defaults
-                to the `MAWAQIT_TOKEN` environment variable. Only searching
-                mosques and logging in work without it.
+            token: API token of a MAWAQIT account. Defaults to the
+                `MAWAQIT_TOKEN` environment variable. Only searching mosques
+                works without it.
             base_url: URL of the API. Defaults to the `MAWAQIT_BASE_URL`
                 environment variable, then to `https://mawaqit.net/api`.
             timeout: Timeout of each request, in seconds.
@@ -135,7 +135,7 @@ class BaseClient(ABC, Generic[HttpClientT]):
         once this client is closed. Options left out keep their current value.
 
         Args:
-            token: API token, typically the one returned by `auth.login()`.
+            token: API token of a MAWAQIT account.
             base_url: URL of the API.
             timeout: Timeout of each request, in seconds.
             max_retries: How many times a failed request is retried.
@@ -169,10 +169,7 @@ class BaseClient(ABC, Generic[HttpClientT]):
         headers = {"Accept": "application/json", "User-Agent": _USER_AGENT}
         if authenticated:
             if not self._token:
-                msg = (
-                    "No API token: pass token= or set MAWAQIT_TOKEN. "
-                    "Get one with auth.login()."
-                )
+                msg = "No API token: pass token= or set MAWAQIT_TOKEN."
                 raise MawaqitError(msg)
             headers[_TOKEN_HEADER] = self._token
         if basic_auth:

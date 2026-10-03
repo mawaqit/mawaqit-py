@@ -57,7 +57,6 @@ with MawaqitClient(token="...") as client:
 
 | Method | Returns |
 | --- | --- |
-| `client.auth.login(email=..., password=...)` | The `Account` of these credentials, with its API token |
 | `client.mosques.search(word=...)` or `(lat=..., lon=...)` | A list of `Mosque` |
 | `client.mosques.prayer_times(uuid)` | The `PrayerTimes` of the year, with iqama |
 | `client.mosques.hijri_settings(uuid)` | The `HijriSettings` of the mosque |
@@ -69,15 +68,8 @@ of the API. Fields the API adds later are kept in `model_extra`.
 
 ### Authentication
 
-Every method but `search()` and `login()` needs an API token. Get it once from
-an email and password, and keep it rather than the password:
-
-```python
-account = await client.auth.login(email="...", password="...")
-client = client.with_options(token=account.api_access_token)
-```
-
-The token can also come from the `MAWAQIT_TOKEN` environment variable.
+Every method but `search()` needs an API token, passed as `token=` or set in
+the `MAWAQIT_TOKEN` environment variable.
 
 ### Hijri date
 
