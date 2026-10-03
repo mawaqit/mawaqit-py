@@ -1,0 +1,134 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mawaqit"
+dynamic = ["version"]
+description = "The official Python library for the MAWAQIT API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "MAWAQIT", email = "support@mawaqit.net" }]
+keywords = ["mawaqit", "mosque", "prayer times", "hijri", "api"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
+dependencies = [
+    "anyio>=3.5",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "typing-extensions>=4.7",
+    "tzdata; sys_platform == 'win32'",
+]
+
+[project.urls]
+Homepage = "https://mawaqit.net"
+Repository = "https://github.com/mawaqit/mawaqit-py"
+Issues = "https://github.com/mawaqit/mawaqit-py/issues"
+Changelog = "https://github.com/mawaqit/mawaqit-py/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pyright>=1.1.405",
+    "pytest>=8.4",
+    "pytest-asyncio>=1.2",
+    "pytest-cov>=7",
+    "respx>=0.22",
+    "ruff>=0.13",
+    "time-machine>=2.19",
+]
+# Only needed to regenerate the code from the spec, see CONTRIBUTING.md.
+codegen = [
+    "jinja2>=3.1",
+    "pyyaml>=6",
+]
+
+[tool.hatch.version]
+path = "src/mawaqit/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mawaqit"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/mawaqit", "tests", "CHANGELOG.md"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "A", "ASYNC", "B", "C4", "D", "E", "ERA", "F", "FBT", "FURB", "I", "N",
+    "PERF", "PIE", "PL", "PT", "PTH", "RET", "RSE", "RUF", "S", "SIM", "T20",
+    "TC", "TRY", "UP", "W",
+]
+ignore = [
+    "PLR0913",  # API methods mirror the parameters of their endpoint
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "PLR2004", "S101", "S105", "S106", "FBT"]
+"codegen/**" = ["T20", "S603", "S607", "TRY003"]
+"examples/**" = ["T20"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["mawaqit._models.BaseModel"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src", "tests", "codegen", "examples"]
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+# The generated resources call the transport of their client.
+reportPrivateUsage = false
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config -m 'not live'"
+markers = ["live: against the real API, run with -m live"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["mawaqit"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "@overload", "raise NotImplementedError"]
+
+[tool.codespell]
+# Real API responses, in French among others.
+skip = "./tests/examples,./tests/data,./uv.lock,./.venv"
+ignore-words-list = "hass"

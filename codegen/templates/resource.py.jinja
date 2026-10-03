@@ -1,0 +1,27 @@
+{{ header }}
+"""{{ resource.doc }}"""
+
+from __future__ import annotations
+
+from pydantic import TypeAdapter
+
+from .._resource import AsyncAPIResource, SyncAPIResource
+from ..types import {{ resource.types | sort | join(", ") }}
+
+__all__ = ["Async{{ resource.name }}", "{{ resource.name }}"]
+
+{% for operation in resource.operations %}
+{{ operation.adapter }} = TypeAdapter({{ operation.returns }})
+{% endfor %}
+{% for async in [True, False] %}
+
+
+class {{ "Async" if async }}{{ resource.name }}({{ "Async" if async else "Sync" }}APIResource):
+    """{{ resource.doc }}"""
+{% for operation in resource.operations %}
+
+    {{ "async " if async }}def {{ operation.name }}({{ operation.signature }}) -> {{ operation.returns }}:
+        """{{ operation.doc }}"""
+        return {{ "await " if async }}self._client._request({{ operation.call }})
+{% endfor %}
+{% endfor %}
