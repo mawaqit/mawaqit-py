@@ -1,6 +1,7 @@
 name: Release
 
 # Publishes a GitHub release to TestPyPI, then to PyPI, with trusted publishing.
+# PyPI trusts this file name: renaming it breaks the publication.
 on:
   release:
     types: [published]

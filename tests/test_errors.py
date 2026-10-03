@@ -7,11 +7,15 @@ from typing import TYPE_CHECKING
 import pytest
 
 from mawaqit import (
+    APIConnectionError,
+    APIError,
     APIResponseValidationError,
     APIStatusError,
+    APITimeoutError,
     AuthenticationError,
     BadRequestError,
     InternalServerError,
+    MawaqitError,
     NotFoundError,
     PermissionDeniedError,
     RateLimitError,
@@ -53,6 +57,7 @@ async def test_status_errors(
 
     assert type(caught.value) is error
     assert caught.value.message == "Invalid token."
+    assert str(caught.value) == f"Invalid token. (HTTP {status})"
     assert caught.value.status_code == status
     assert caught.value.body == body
     assert caught.value.response.status_code == status
@@ -65,14 +70,15 @@ async def test_error_with_an_html_page(api: respx.MockRouter, client: Client) ->
     with pytest.raises(AuthenticationError) as caught:
         await resolve(client.mosques.prayer_times(UUID))
 
-    assert caught.value.message == "MAWAQIT answered HTTP 401."
+    assert caught.value.message == "Unauthorized"
+    assert str(caught.value) == "Unauthorized (HTTP 401)"
     assert caught.value.body == "<p>error401</p>"
 
 
 async def test_error_without_a_message(api: respx.MockRouter, client: Client) -> None:
     api.get(PRAYER_TIMES).respond(404, json={"message": ""})
 
-    with pytest.raises(NotFoundError, match=r"^MAWAQIT answered HTTP 404\.$"):
+    with pytest.raises(NotFoundError, match=r"^Not Found \(HTTP 404\)$"):
         await resolve(client.mosques.prayer_times(UUID))
 
 
@@ -95,3 +101,19 @@ async def test_response_with_unexpected_data(
         await resolve(client.mosques.hijri_settings(UUID))
 
     assert e.value.body == {"hijriAdjustment": "x"}
+
+
+def test_error_hierarchy() -> None:
+    for error in (
+        AuthenticationError,
+        BadRequestError,
+        InternalServerError,
+        NotFoundError,
+        PermissionDeniedError,
+        RateLimitError,
+    ):
+        assert issubclass(error, APIStatusError)
+    assert issubclass(APITimeoutError, APIConnectionError)
+    for base in (APIStatusError, APIConnectionError, APIResponseValidationError):
+        assert issubclass(base, APIError)
+    assert issubclass(APIError, MawaqitError)

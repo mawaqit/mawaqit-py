@@ -82,3 +82,13 @@ def test_deprecated_field_warns() -> None:
     assert flash.end_date == date(2026, 10, 4)
     with pytest.warns(DeprecationWarning, match="Use `end_date`"):
         assert flash.expire == 1791072000
+
+
+def test_token_is_kept_out_of_logs() -> None:
+    account = Account.model_validate(
+        {"id": 1, "apiAccessToken": UUID, "apiQuota": 0, "apiCallNumber": 0}
+    )
+
+    assert account.api_access_token == UUID
+    assert UUID not in repr(account)
+    assert UUID not in str(account)

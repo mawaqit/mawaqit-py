@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import httpx
@@ -13,9 +14,10 @@ from mawaqit import (
     APITimeoutError,
     InternalServerError,
     NotFoundError,
+    RateLimitError,
 )
 
-from .conftest import Client, resolve
+from .conftest import TOKEN, Client, resolve
 
 if TYPE_CHECKING:
     import respx
@@ -108,7 +110,9 @@ async def test_honors_retry_after(
     assert sleeps == [delay]
 
 
-@pytest.mark.parametrize("retry_after", ["", "soon", "3600", "-1"])
+@pytest.mark.parametrize(
+    "retry_after", ["", "soon", "-1", "Mon, 01 Jan 2001 00:00:00 GMT"]
+)
 async def test_ignores_unusable_retry_after(
     api: respx.MockRouter, client: Client, sleeps: list[float], retry_after: str
 ) -> None:
@@ -156,3 +160,35 @@ async def test_network_errors(
     assert isinstance(caught.value.__cause__, network_error)
     assert route.call_count == 3
     assert len(sleeps) == 2
+
+
+@pytest.mark.parametrize("retry_after", ["61", "3600"])
+async def test_gives_up_when_asked_to_wait_too_long(
+    api: respx.MockRouter, client: Client, sleeps: list[float], retry_after: str
+) -> None:
+    route = api.get(SEARCH).respond(429, headers={"Retry-After": retry_after})
+
+    with pytest.raises(RateLimitError):
+        await search(client)
+
+    assert route.call_count == 1
+    assert not sleeps
+
+
+async def test_logs(
+    api: respx.MockRouter,
+    client: Client,
+    sleeps: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    api.get(SEARCH).side_effect = [httpx.Response(503), httpx.Response(200, json=[])]
+
+    with caplog.at_level(logging.DEBUG, logger="mawaqit"):
+        await search(client)
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert messages[0] == f"GET /api{SEARCH}: HTTP 503"
+    assert messages[1].startswith(f"Retrying GET /api{SEARCH} in ")
+    assert messages[1].endswith(" s after HTTP 503")
+    assert messages[2] == f"GET /api{SEARCH}: HTTP 200"
+    assert all(TOKEN not in message for message in messages)

@@ -73,6 +73,7 @@ class Field:
     type: str
     required: bool
     deprecated: str | None
+    sensitive: bool
     doc: str
 
 
@@ -306,6 +307,7 @@ class Generator:
                         type=annotation,
                         required=prop in required,
                         deprecated=self._deprecation(prop, prop_schema),
+                        sensitive=prop_schema.get("x-sensitive", False),
                         doc=self.attribute_doc(self._description(prop_schema)),
                     )
                 )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import date, timedelta
 from itertools import pairwise
 from pathlib import Path
@@ -13,7 +14,9 @@ import time_machine
 
 from mawaqit import hijri
 from mawaqit.hijri import HijriDate, HijriMonth
-from mawaqit.types import HijriSettings
+from mawaqit.types import HijriSettings, PrayerTimes
+
+from .conftest import example
 
 MONTH_STARTS = json.loads(
     (Path(__file__).parent / "data" / "kuwaiti_month_starts.json").read_text()
@@ -97,4 +100,44 @@ def test_date() -> None:
     assert str(HijriDate(1448, HijriMonth.RAMADAN, 9)) == "9 Ramadan 1448"
     assert HijriDate(1447, HijriMonth.DHU_AL_HIJJA, 30) < HijriDate(
         1448, HijriMonth.MUHARRAM, 1
+    )
+
+
+def test_kuwaiti_invariants_from_1900_to_2200() -> None:
+    """Each day follows the previous one, and months last 29 or 30 days."""
+    day = date(1900, 1, 1)
+    previous = hijri.kuwaiti(day)
+    length = 0
+    while day < date(2200, 1, 1):
+        day += timedelta(days=1)
+        current = hijri.kuwaiti(day)
+        if current.day == 1:
+            assert length in (0, 29, 30)
+            assert current.month == previous.month % 12 + 1
+            assert current.year == previous.year + (current.month == 1)
+            length = 1
+        else:
+            assert current == replace(previous, day=previous.day + 1)
+            length += 1 if length else 0
+        previous = current
+
+
+@pytest.mark.parametrize(
+    ("adjustment", "expected"),
+    [
+        (-1, HijriDate(1447, HijriMonth.DHU_AL_HIJJA, 30)),
+        (1, HijriDate(1448, HijriMonth.MUHARRAM, 2)),
+    ],
+)
+def test_adjustment_across_years(adjustment: int, expected: HijriDate) -> None:
+    assert hijri.from_gregorian(date(2026, 6, 16), settings(adjustment)) == expected
+
+
+def test_prayer_times_as_settings() -> None:
+    prayer_times = PrayerTimes.model_validate(
+        example("mosquesPrayerTimes", "grande-mosquee-de-paris")
+    )
+
+    assert hijri.from_gregorian(date(2026, 2, 18), prayer_times) == HijriDate(
+        1447, HijriMonth.RAMADAN, 1
     )

@@ -96,6 +96,10 @@ class APIStatusError(_ResponseError):
         status_code: The HTTP status code of the response.
     """
 
+    def __str__(self) -> str:
+        """Return the message, with the status code."""
+        return f"{self.message} (HTTP {self.status_code})"
+
 
 class BadRequestError(APIStatusError):
     """The API rejected the request as invalid (HTTP 400)."""
@@ -106,7 +110,7 @@ class AuthenticationError(APIStatusError):
 
 
 class PermissionDeniedError(APIStatusError):
-    """The account is not allowed to do this, or used all its API calls (HTTP 403)."""
+    """The account used all its API calls, or the request was blocked (HTTP 403)."""
 
 
 class NotFoundError(APIStatusError):
@@ -141,7 +145,7 @@ def status_error(response: httpx.Response) -> APIStatusError:
     if isinstance(body, dict):
         message = cast("dict[str, object]", body).get("message")
     if not isinstance(message, str) or not message:
-        message = f"MAWAQIT answered HTTP {response.status_code}."
+        message = response.reason_phrase or "Unknown error"
     if response.status_code >= _FIRST_SERVER_ERROR:
         return InternalServerError(message, response, body=body)
     error = _STATUS_ERRORS.get(response.status_code, APIStatusError)

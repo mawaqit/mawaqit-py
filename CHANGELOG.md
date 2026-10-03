@@ -3,7 +3,7 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
-## 2.0.0 - Unreleased
+## 2.0.0b1 - 2026-10-04
 
 A new library, generated from the OpenAPI description of the API.
 
@@ -15,6 +15,7 @@ A new library, generated from the OpenAPI description of the API.
 - `client.mosques.hijri_settings()` and `client.mosques.config()`.
 - Retries with backoff for network errors, timeouts and temporary errors.
 - `with_options()`, to change the token, timeout or retries of a client.
+- Debug logs of every response, without the token.
 
 ### Changed
 

@@ -15,6 +15,7 @@ The CI runs all of them, on Python 3.10 to 3.14:
 
 ```sh
 uv run pytest --cov          # 100% of lines and branches
+uv run pytest -m live        # against the real API, with MAWAQIT_TOKEN for most tests
 uv run ruff check . && uv run ruff format --check .
 uv run mypy                  # strict
 uv run pyright               # strict
@@ -63,5 +64,6 @@ read-only deploy key of mawaqit/api-spec.
    the new version.
 2. Publish a GitHub release whose tag is the version, like `2.0.0`.
 
-The `Release` workflow then runs the CI, and publishes to TestPyPI, then to
-PyPI, with trusted publishing.
+`python-publish.yml` then runs the CI, and publishes to TestPyPI, then to PyPI,
+with trusted publishing. Mark beta versions, like `2.0.0b1`, as pre-releases:
+`pip` only installs them when asked for.

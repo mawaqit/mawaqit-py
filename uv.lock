@@ -609,6 +609,7 @@ wheels = [
 name = "mawaqit"
 source = { editable = "." }
 dependencies = [
+    { name = "anyio" },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
@@ -633,6 +634,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", specifier = ">=3.5" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "typing-extensions", specifier = ">=4.7" },

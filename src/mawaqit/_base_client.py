@@ -175,8 +175,12 @@ class BaseClient(ABC, Generic[HttpClientT]):
         if basic_auth:
             credentials = base64.b64encode(":".join(basic_auth).encode()).decode()
             headers["Authorization"] = f"Basic {credentials}"
+        for name, value in (path_params or {}).items():
+            if not str(value):
+                msg = f"{name} cannot be empty."
+                raise ValueError(msg)
         # Path parameters are quoted so that a value cannot change the path.
-        quoted = {k: quote(v, safe="") for k, v in (path_params or {}).items()}
+        quoted = {k: quote(str(v), safe="") for k, v in (path_params or {}).items()}
         return self._http.build_request(
             method,
             self._base_url + path.format_map(quoted),
@@ -186,10 +190,14 @@ class BaseClient(ABC, Generic[HttpClientT]):
         )
 
     def _should_retry(self, retries_taken: int, response: httpx.Response) -> bool:
-        return (
-            retries_taken < self._max_retries
-            and response.status_code in _RETRY_STATUSES
-        )
+        if (
+            retries_taken >= self._max_retries
+            or response.status_code not in _RETRY_STATUSES
+        ):
+            return False
+        # Retrying sooner than the API asks would only fail again.
+        retry_after = _retry_after(response)
+        return retry_after is None or retry_after <= _MAX_RETRY_AFTER
 
     def _retry_delay(
         self,
@@ -234,7 +242,7 @@ class BaseClient(ABC, Generic[HttpClientT]):
 
 
 def _retry_after(response: httpx.Response) -> float | None:
-    """Return the delay asked by a `Retry-After` header, if reasonable."""
+    """Return the delay asked by a `Retry-After` header, if it has a valid one."""
     value = response.headers.get("Retry-After")
     if not value:
         return None
@@ -246,7 +254,14 @@ def _retry_after(response: httpx.Response) -> float | None:
         except (TypeError, ValueError):
             return None
         delay = date.timestamp() - time.time()
-    return delay if 0 <= delay <= _MAX_RETRY_AFTER else None
+    return delay if delay >= 0 else None
+
+
+def _log_response(response: httpx.Response) -> None:
+    request = response.request
+    _LOGGER.debug(
+        "%s %s: HTTP %s", request.method, request.url.path, response.status_code
+    )
 
 
 def _connection_error(request: httpx.Request, error: httpx.TransportError) -> Exception:
@@ -308,6 +323,7 @@ class AsyncAPIClient(BaseClient[httpx.AsyncClient]):
                 if retries_taken >= self._max_retries:
                     raise _connection_error(request, err) from err
             else:
+                _log_response(response)
                 if not self._should_retry(retries_taken, response):
                     return self._process_response(response, response_type)
             await anyio.sleep(self._retry_delay(request, retries_taken, response))
@@ -367,6 +383,7 @@ class SyncAPIClient(BaseClient[httpx.Client]):
                 if retries_taken >= self._max_retries:
                     raise _connection_error(request, err) from err
             else:
+                _log_response(response)
                 if not self._should_retry(retries_taken, response):
                     return self._process_response(response, response_type)
             time.sleep(self._retry_delay(request, retries_taken, response))

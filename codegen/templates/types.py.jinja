@@ -25,6 +25,7 @@ class {{ model.name }}(BaseModel):
 {% if not field.required %}{% set _ = options.append("default=None") %}{% endif %}
 {# Not alias=: type checkers would then expect the alias in __init__. #}
 {% if field.alias %}{% set _ = options.append('validation_alias="' ~ field.alias ~ '", serialization_alias="' ~ field.alias ~ '"') %}{% endif %}
+{% if field.sensitive %}{% set _ = options.append("repr=False") %}{% endif %}
 {% if field.deprecated %}{% set _ = options.append('deprecated="' ~ field.deprecated ~ '"') %}{% endif %}
 {% if options == ["default=None"] %}
     {{ field.name }}: {{ field.type }} = None

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING
+import uuid
 
 import httpx
 import pytest
+import respx
 
 from mawaqit import (
     DEFAULT_BASE_URL,
@@ -19,9 +20,6 @@ from mawaqit import (
 )
 
 from .conftest import TOKEN, UUID, Client, resolve
-
-if TYPE_CHECKING:
-    import respx
 
 ACCOUNT = {"id": 1, "apiAccessToken": TOKEN, "apiQuota": 300, "apiCallNumber": 12}
 
@@ -158,3 +156,57 @@ async def test_path_parameters_are_quoted(
     assert route.calls.last.request.url.raw_path == (
         b"/api/3.0/mosque/..%2F..%2F2.0%2Fme/hijri-date"
     )
+
+
+async def test_base_url_of_the_requests(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MAWAQIT_BASE_URL", "https://staging.example/api/")
+    with respx.mock(assert_all_called=True) as router:
+        staging = router.get("https://staging.example/api/2.0/mosque/search")
+        local = router.get("https://mawaqit.test/api/2.0/mosque/search")
+        staging.respond(json=[])
+        local.respond(json=[])
+        async with AsyncMawaqitClient() as client:
+            await client.mosques.search(word="paris")
+            other = client.with_options(base_url="https://mawaqit.test/api")
+            await other.mosques.search(word="paris")
+
+
+async def test_timeout_of_the_requests(api: respx.MockRouter, client: Client) -> None:
+    route = api.get("/2.0/mosque/search").respond(json=[])
+
+    await resolve(client.with_options(timeout=5).mosques.search(word="paris"))
+
+    assert route.calls.last.request.extensions["timeout"] == {
+        "connect": 5,
+        "read": 5,
+        "write": 5,
+        "pool": 5,
+    }
+
+
+async def test_query_is_encoded(api: respx.MockRouter, client: Client) -> None:
+    route = api.get("/2.0/mosque/search").respond(json=[])
+
+    await resolve(client.mosques.search(word="mosquée & école", page=2))
+
+    # The "&" of the word must not split it into two parameters.
+    assert dict(route.calls.last.request.url.params) == {
+        "word": "mosquée & école",
+        "page": "2",
+    }
+
+
+async def test_uuid_objects(api: respx.MockRouter, client: Client) -> None:
+    route = api.get(f"/3.0/mosque/{UUID}/hijri-date").respond(
+        json={"hijriAdjustment": 0, "hijriDateForceTo30": False}
+    )
+
+    await resolve(client.mosques.hijri_settings(uuid.UUID(UUID)))  # type: ignore[arg-type]
+
+    assert route.called
+
+
+async def test_empty_uuid(api: respx.MockRouter, client: Client) -> None:
+    with pytest.raises(ValueError, match="uuid cannot be empty"):
+        await resolve(client.mosques.prayer_times(""))
+    assert not api.calls
