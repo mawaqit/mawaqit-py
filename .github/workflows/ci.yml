@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint and type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - run: uv sync --locked
+      - run: uv run ruff check --output-format=github .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pyright
+      - name: Check that the public API is fully typed
+        run: uv run pyright --verifytypes mawaqit --ignoreexternal
+      - run: uvx codespell
+      - run: uvx yamllint --strict .
+      - run: uvx zizmor --pedantic --offline .github
+
+  test:
+    name: >-
+      Tests on Python ${{ matrix.python }}
+      ${{ matrix.resolution && '(lowest dependencies)' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - python: "3.10"
+            resolution: lowest-direct
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          python-version: ${{ matrix.python }}
+      - name: Install the dependencies
+        env:
+          RESOLUTION: ${{ matrix.resolution }}
+        run: |
+          if [ -n "$RESOLUTION" ]; then
+            uv sync --resolution "$RESOLUTION"
+          else
+            uv sync --locked
+          fi
+      - run: uv run --no-sync pytest --cov
+
+  package:
+    name: Build and check the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - run: uv build
+      - run: uvx twine check --strict dist/*
+      - name: Install the wheel alone and use it
+        run: |
+          uv venv --python 3.10 /tmp/wheel
+          uv pip install --python /tmp/wheel dist/*.whl
+          /tmp/wheel/bin/python - <<'PY'
+          import importlib.resources
+
+          import mawaqit
+          from mawaqit import AsyncMawaqitClient, MawaqitClient, hijri, types
+
+          assert importlib.resources.files("mawaqit").joinpath("py.typed").is_file()
+          assert MawaqitClient().mosques and AsyncMawaqitClient().auth
+          print("mawaqit", mawaqit.__version__, hijri.kuwaiti.__name__, types.Mosque)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7

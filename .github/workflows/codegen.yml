@@ -1,0 +1,52 @@
+name: Codegen
+
+# Checks that the generated code matches the spec pinned in codegen/spec.json.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  up-to-date:
+    name: Generated code is up to date
+    # The spec is private: pull requests from forks cannot read it.
+    if: >-
+      github.event_name == 'push'
+      || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: api-spec
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read the pinned spec
+        id: pin
+        run: echo "ref=$(jq -r .ref codegen/spec.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mawaqit/api-spec
+          ref: ${{ steps.pin.outputs.ref }}
+          ssh-key: ${{ secrets.API_SPEC_DEPLOY_KEY }}
+          path: .api-spec
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - run: uv sync --locked --group codegen
+      - run: uv run --no-sync codegen/generate.py --spec-dir .api-spec
+      - name: Fail if the generated code changed
+        run: |
+          rm -rf .api-spec
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            git diff
+            echo "::error::Run codegen/generate.py and commit the result."
+            exit 1
+          fi
