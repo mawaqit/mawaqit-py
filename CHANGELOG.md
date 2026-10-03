@@ -3,6 +3,12 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.0.0b2 - 2026-10-04
+
+### Changed
+
+- Build with hatchling 1.32.4 or newer.
+
 ## 2.0.0b1 - 2026-10-04
 
 A new library, generated from the OpenAPI description of the API.
