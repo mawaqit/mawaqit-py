@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from mawaqit.types import HijriSettings, Mosque, PrayerTimes
+from mawaqit.types import HijriSettings, Mosque, MosqueConfig, PrayerTimes
 
 from .conftest import UUID, Client, example, resolve
 
@@ -82,3 +83,30 @@ async def test_hijri_settings(api: respx.MockRouter, client: Client) -> None:
     settings = await resolve(client.mosques.hijri_settings(UUID))
 
     assert settings == HijriSettings(hijri_adjustment=-1, hijri_date_force_to_30=False)
+
+
+async def test_config(api: respx.MockRouter, client: Client) -> None:
+    api.get(f"/3.0/mosque/{UUID}/config").respond(
+        json=example("mosquesConfig", "grande-mosquee-de-paris")
+    )
+
+    config = await resolve(client.mosques.config(UUID))
+
+    assert isinstance(config, MosqueConfig)
+    assert config.displaying_sabah_imsak is False
+    assert config.sabah_imsak_start_date is None
+    assert len(config.adhan_enabled_by_prayer) == 5
+
+
+async def test_config_sabah_imsak_dates(api: respx.MockRouter, client: Client) -> None:
+    data = example("mosquesConfig", "grande-mosquee-de-paris") | {
+        "displayingSabahImsak": True,
+        "sabahImsakStartDate": "2026-03-01T00:00:00+01:00",
+    }
+    api.get(f"/3.0/mosque/{UUID}/config").respond(json=data)
+
+    config = await resolve(client.mosques.config(UUID))
+
+    assert config.sabah_imsak_start_date == datetime(
+        2026, 3, 1, tzinfo=timezone(timedelta(hours=1))
+    )

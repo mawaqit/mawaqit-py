@@ -12,7 +12,7 @@ A new library, generated from the OpenAPI description of the API.
 - `MawaqitClient`, a sync client with the same methods as the async one.
 - Typed models for every response, with the documentation of each field.
 - `mawaqit.hijri`, to compute the Hijri date of a mosque like MAWAQIT does.
-- `client.mosques.hijri_settings()`.
+- `client.mosques.hijri_settings()` and `client.mosques.config()`.
 - Retries with backoff for network errors, timeouts and temporary errors.
 - `with_options()`, to change the token, timeout or retries of a client.
 

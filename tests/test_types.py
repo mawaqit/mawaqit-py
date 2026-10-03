@@ -9,12 +9,20 @@ from typing import Any
 import pytest
 from pydantic import TypeAdapter
 
-from mawaqit.types import Account, FlashMessage, HijriSettings, Mosque, PrayerTimes
+from mawaqit.types import (
+    Account,
+    FlashMessage,
+    HijriSettings,
+    Mosque,
+    MosqueConfig,
+    PrayerTimes,
+)
 
 from .conftest import EXAMPLES, UUID
 
 ADAPTERS: dict[str, TypeAdapter[Any]] = {
     "authLogin": TypeAdapter(Account),
+    "mosquesConfig": TypeAdapter(MosqueConfig),
     "mosquesHijriSettings": TypeAdapter(HijriSettings),
     "mosquesPrayerTimes": TypeAdapter(PrayerTimes),
     "mosquesSearch": TypeAdapter(list[Mosque]),

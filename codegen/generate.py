@@ -280,7 +280,8 @@ class Generator:
             value = self.python_type(schema["additionalProperties"], refs)
             annotation = f"dict[str, {value}]"
         elif kind == "string":
-            annotation = "date" if schema.get("format") == "date" else "str"
+            formats = {"date": "date", "date-time": "datetime"}
+            annotation = formats.get(schema.get("format", ""), "str")
         else:
             annotation = {"integer": "int", "number": "float", "boolean": "bool"}[kind]
         return f"{annotation} | None" if nullable else annotation
