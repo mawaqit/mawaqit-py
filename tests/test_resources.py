@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import TYPE_CHECKING
 
 from mawaqit.types import HijriSettings, Mosque, PrayerTimes
 
-from .conftest import UUID, Client, example, prayer_times_payload, resolve
+from .conftest import UUID, Client, example, resolve
 
 if TYPE_CHECKING:
     import respx
@@ -59,31 +58,27 @@ async def test_search_finding_nothing(api: respx.MockRouter, client: Client) -> 
 
 
 async def test_prayer_times(api: respx.MockRouter, client: Client) -> None:
-    api.get(f"/2.0/mosque/{UUID}/prayer-times").respond(json=prayer_times_payload())
+    api.get(f"/2.0/mosque/{UUID}/prayer-times").respond(
+        json=example("mosquesPrayerTimes", "grande-mosquee-de-paris")
+    )
 
     prayer_times = await resolve(client.mosques.prayer_times(UUID))
 
     assert isinstance(prayer_times, PrayerTimes)
+    assert prayer_times.uuid == UUID
     assert prayer_times.timezone == "Europe/Paris"
-    assert prayer_times.calendar[0]["1"] == [
-        "06:20",
-        "07:53",
-        "13:45",
-        "16:46",
-        "19:29",
-        "20:56",
-    ]
-    assert prayer_times.iqama_calendar[11]["30"][3] == "+0"
-    assert prayer_times.hijri_date_force_to_30 is False
-    assert prayer_times.flash is not None
-    assert prayer_times.flash.end_date == date(2026, 10, 4)
+    assert len(prayer_times.calendar) == 12
+    assert len(prayer_times.calendar[0]["1"]) == 6
+    assert len(prayer_times.iqama_calendar[11]["31"]) == 5
+    assert prayer_times.jumua_2 == "14:30"
+    assert prayer_times.hijri_adjustment == -1
 
 
 async def test_hijri_settings(api: respx.MockRouter, client: Client) -> None:
     api.get(f"/3.0/mosque/{UUID}/hijri-date").respond(
-        json={"hijriAdjustment": -1, "hijriDateForceTo30": True}
+        json=example("mosquesHijriSettings", "grande-mosquee-de-paris")
     )
 
     settings = await resolve(client.mosques.hijri_settings(UUID))
 
-    assert settings == HijriSettings(hijri_adjustment=-1, hijri_date_force_to_30=True)
+    assert settings == HijriSettings(hijri_adjustment=-1, hijri_date_force_to_30=False)

@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from typing import Any
 
 import pytest
 from pydantic import TypeAdapter
 
-from mawaqit.types import Account, HijriSettings, Mosque, PrayerTimes
+from mawaqit.types import Account, FlashMessage, HijriSettings, Mosque, PrayerTimes
 
-from .conftest import EXAMPLES, prayer_times_payload
+from .conftest import EXAMPLES, UUID
 
 ADAPTERS: dict[str, TypeAdapter[Any]] = {
     "authLogin": TypeAdapter(Account),
@@ -58,8 +59,18 @@ def test_snake_case_names() -> None:
 
 
 def test_deprecated_field_warns() -> None:
-    prayer_times = PrayerTimes.model_validate(prayer_times_payload())
-    assert prayer_times.flash is not None
+    flash = FlashMessage.model_validate(
+        {
+            "content": "Iftar at the mosque",
+            "uuid": UUID,
+            "expire": 1791072000,
+            "startDate": "2026-10-01",
+            "endDate": "2026-10-04",
+            "color": "#d9ad0f",
+            "orientation": "ltr",
+        }
+    )
 
-    with pytest.warns(DeprecationWarning, match="expire"):
-        assert prayer_times.flash.expire == 1791072000
+    assert flash.end_date == date(2026, 10, 4)
+    with pytest.warns(DeprecationWarning, match="Use `end_date`"):
+        assert flash.expire == 1791072000
