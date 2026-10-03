@@ -33,9 +33,9 @@ jobs:
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          version=$(uv run --no-sync python -c "import mawaqit; print(mawaqit.__version__)")
-          if [ "${TAG#v}" != "$version" ]; then
-            echo "::error::The tag $TAG is not the version $version of the package."
+          if [ ! -f "dist/mawaqit-${TAG#v}-py3-none-any.whl" ]; then
+            ls dist
+            echo "::error::The tag $TAG is not the version of the package."
             exit 1
           fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
