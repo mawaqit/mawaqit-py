@@ -1,0 +1,13 @@
+{{ header }}
+"""The resources of the clients: one group of operations per tag of the API."""
+
+{% for resource in resources %}
+from .{{ resource.module }} import Async{{ resource.name }}, {{ resource.name }}
+{% endfor %}
+
+__all__ = [
+{% for resource in resources %}
+    "Async{{ resource.name }}",
+    "{{ resource.name }}",
+{% endfor %}
+]

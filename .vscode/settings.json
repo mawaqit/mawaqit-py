@@ -1,13 +1,12 @@
 {
+  "python.defaultInterpreterPath": ".venv/bin/python",
   "python.testing.pytestArgs": ["tests"],
-  "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "files.exclude": {
-    "**/.venv": true,
-    "**/mawaqit.egg-info": true,
-    "**/__pycache__": true,
-    "**/.pytest_cache": true,
-    "**/.mypy_cache": true,
-    "**/.ruff_cache": true
+  "python.testing.unittestEnabled": false,
+  "files.readonlyInclude": {
+    "src/mawaqit/types.py": true,
+    "src/mawaqit/_client.py": true,
+    "src/mawaqit/resources/**": true,
+    "tests/examples/**": true
   }
 }
