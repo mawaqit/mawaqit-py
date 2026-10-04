@@ -37,6 +37,7 @@ async def test_mosque() -> None:
         settings = await client.mosques.hijri_settings(UUID)
         config = await client.mosques.config(UUID)
         flash = await client.mosques.flash_message(UUID)
+        mosque = await client.mosques.get(prayer_times.id)
 
     assert prayer_times.uuid == UUID
     assert len(prayer_times.calendar) == 12
@@ -46,6 +47,8 @@ async def test_mosque() -> None:
     assert not prayer_times.model_extra
     assert not config.model_extra
     assert flash is None or not flash.model_extra
+    assert mosque.uuid == UUID
+    assert not mosque.model_extra
 
 
 @needs_token

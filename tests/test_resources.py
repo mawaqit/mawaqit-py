@@ -11,6 +11,7 @@ from mawaqit.types import (
     HijriSettings,
     Mosque,
     MosqueConfig,
+    MosqueSummary,
     PrayerTimes,
 )
 
@@ -63,6 +64,19 @@ async def test_search_finding_nothing(api: respx.MockRouter, client: Client) -> 
     )
 
     assert await resolve(client.mosques.search(word="x")) == []
+
+
+async def test_get(api: respx.MockRouter, client: Client) -> None:
+    api.get("/3.0/mosque/256").respond(
+        json=example("mosquesGet", "grande-mosquee-de-paris")
+    )
+
+    mosque = await resolve(client.mosques.get(256))
+
+    assert isinstance(mosque, MosqueSummary)
+    assert mosque.id == 256
+    assert mosque.uuid == UUID
+    assert mosque.type == "MOSQUE"
 
 
 async def test_prayer_times(api: respx.MockRouter, client: Client) -> None:

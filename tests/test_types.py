@@ -15,6 +15,7 @@ from mawaqit.types import (
     HijriSettings,
     Mosque,
     MosqueConfig,
+    MosqueSummary,
     PrayerTimes,
 )
 
@@ -24,6 +25,7 @@ ADAPTERS: dict[str, TypeAdapter[Any]] = {
     "authLogin": TypeAdapter(Account),
     "mosquesConfig": TypeAdapter(MosqueConfig),
     "mosquesFlashMessage": TypeAdapter(FlashMessage | None),
+    "mosquesGet": TypeAdapter(MosqueSummary),
     "mosquesHijriSettings": TypeAdapter(HijriSettings),
     "mosquesPrayerTimes": TypeAdapter(PrayerTimes),
     "mosquesSearch": TypeAdapter(list[Mosque]),

@@ -64,6 +64,7 @@ with MawaqitClient(token="...") as client:
 | Method | Returns |
 | --- | --- |
 | `client.mosques.search(word=...)` or `(lat=..., lon=...)` | A list of `Mosque` |
+| `client.mosques.get(mosque_id)` | The `MosqueSummary` of a mosque or a home, with its UUID |
 | `client.mosques.prayer_times(uuid)` | The `PrayerTimes` of the year, with iqama |
 | `client.mosques.hijri_settings(uuid)` | The `HijriSettings` of the mosque |
 | `client.mosques.config(uuid)` | The `MosqueConfig`: the settings of the mosque screens |
