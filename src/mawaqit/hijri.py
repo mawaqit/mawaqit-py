@@ -46,20 +46,20 @@ _SHIFT = 8.01 / 60
 
 
 class HijriMonth(IntEnum):
-    """A month of the Hijri calendar."""
+    """A month of the Hijri calendar, named like in the MAWAQIT apps."""
 
     MUHARRAM = 1
     SAFAR = 2
     RABI_AL_AWWAL = 3
     RABI_AL_THANI = 4
     JUMADA_AL_ULA = 5
-    JUMADA_AL_AKHIRA = 6
+    JUMADA_AL_AKHIRAH = 6
     RAJAB = 7
     SHABAN = 8
     RAMADAN = 9
     SHAWWAL = 10
-    DHU_AL_QADA = 11
-    DHU_AL_HIJJA = 12
+    DHU_AL_QIDAH = 11
+    DHU_AL_HIJJAH = 12
 
     @property
     def label(self) -> str:
@@ -73,13 +73,13 @@ _LABELS = {
     HijriMonth.RABI_AL_AWWAL: "Rabi' al-Awwal",
     HijriMonth.RABI_AL_THANI: "Rabi' al-Thani",
     HijriMonth.JUMADA_AL_ULA: "Jumada al-Ula",
-    HijriMonth.JUMADA_AL_AKHIRA: "Jumada al-Akhira",
+    HijriMonth.JUMADA_AL_AKHIRAH: "Jumada al-Akhirah",
     HijriMonth.RAJAB: "Rajab",
     HijriMonth.SHABAN: "Sha'ban",
     HijriMonth.RAMADAN: "Ramadan",
     HijriMonth.SHAWWAL: "Shawwal",
-    HijriMonth.DHU_AL_QADA: "Dhu al-Qa'da",
-    HijriMonth.DHU_AL_HIJJA: "Dhu al-Hijja",
+    HijriMonth.DHU_AL_QIDAH: "Dhu al-Qi'dah",
+    HijriMonth.DHU_AL_HIJJAH: "Dhu al-Hijjah",
 }
 
 
@@ -167,7 +167,7 @@ def from_gregorian(day: date, settings: HijriSettingsLike | None = None) -> Hijr
     if hijri.day != 1:
         return replace(hijri, day=30)
     if hijri.month is HijriMonth.MUHARRAM:
-        return HijriDate(hijri.year - 1, HijriMonth.DHU_AL_HIJJA, 30)
+        return HijriDate(hijri.year - 1, HijriMonth.DHU_AL_HIJJAH, 30)
     return HijriDate(hijri.year, HijriMonth(hijri.month - 1), 30)
 
 

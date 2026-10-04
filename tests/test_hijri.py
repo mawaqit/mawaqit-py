@@ -64,7 +64,7 @@ def test_adjustment(adjustment: int, expected: HijriDate) -> None:
         # 1 Shawwal 1447: the 30th of the previous month, unlike the apps.
         (date(2026, 3, 19), HijriDate(1447, HijriMonth.RAMADAN, 30)),
         # 1 Muharram 1448: the 30th of the last month of the previous year.
-        (date(2026, 6, 16), HijriDate(1447, HijriMonth.DHU_AL_HIJJA, 30)),
+        (date(2026, 6, 16), HijriDate(1447, HijriMonth.DHU_AL_HIJJAH, 30)),
     ],
 )
 def test_forced_to_30(day: date, expected: HijriDate) -> None:
@@ -93,12 +93,30 @@ def test_today(now: str, timezone: str | ZoneInfo, expected: HijriDate) -> None:
 def test_month() -> None:
     assert int(HijriMonth.RAMADAN) == 9
     assert HijriMonth.RAMADAN.label == "Ramadan"
-    assert HijriMonth.DHU_AL_QADA.label == "Dhu al-Qa'da"
+    assert HijriMonth.DHU_AL_QIDAH.label == "Dhu al-Qi'dah"
+
+
+def test_month_names() -> None:
+    """The names of the MAWAQIT apps, which integrations use as states."""
+    assert [month.name.lower() for month in HijriMonth] == [
+        "muharram",
+        "safar",
+        "rabi_al_awwal",
+        "rabi_al_thani",
+        "jumada_al_ula",
+        "jumada_al_akhirah",
+        "rajab",
+        "shaban",
+        "ramadan",
+        "shawwal",
+        "dhu_al_qidah",
+        "dhu_al_hijjah",
+    ]
 
 
 def test_date() -> None:
     assert str(HijriDate(1448, HijriMonth.RAMADAN, 9)) == "9 Ramadan 1448"
-    assert HijriDate(1447, HijriMonth.DHU_AL_HIJJA, 30) < HijriDate(
+    assert HijriDate(1447, HijriMonth.DHU_AL_HIJJAH, 30) < HijriDate(
         1448, HijriMonth.MUHARRAM, 1
     )
 
@@ -125,7 +143,7 @@ def test_kuwaiti_invariants_from_1900_to_2200() -> None:
 @pytest.mark.parametrize(
     ("adjustment", "expected"),
     [
-        (-1, HijriDate(1447, HijriMonth.DHU_AL_HIJJA, 30)),
+        (-1, HijriDate(1447, HijriMonth.DHU_AL_HIJJAH, 30)),
         (1, HijriDate(1448, HijriMonth.MUHARRAM, 2)),
     ],
 )

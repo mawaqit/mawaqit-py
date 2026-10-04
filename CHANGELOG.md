@@ -3,6 +3,14 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Changed
+
+- `HijriMonth.JUMADA_AL_AKHIRA`, `DHU_AL_QADA` and `DHU_AL_HIJJA` are renamed
+  `JUMADA_AL_AKHIRAH`, `DHU_AL_QIDAH` and `DHU_AL_HIJJAH`, like in the MAWAQIT
+  apps, and their labels follow.
+
 ## 2.0.0b2 - 2026-10-04
 
 ### Changed
