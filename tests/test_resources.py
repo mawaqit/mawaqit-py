@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import json
+from datetime import date, datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from mawaqit.types import HijriSettings, Mosque, MosqueConfig, PrayerTimes
+from mawaqit.types import (
+    FlashMessage,
+    HijriSettings,
+    Mosque,
+    MosqueConfig,
+    PrayerTimes,
+)
 
 from .conftest import UUID, Client, example, resolve
 
@@ -110,3 +117,28 @@ async def test_config_sabah_imsak_dates(api: respx.MockRouter, client: Client) -
     assert config.sabah_imsak_start_date == datetime(
         2026, 3, 1, tzinfo=timezone(timedelta(hours=1))
     )
+
+
+async def test_flash_message(api: respx.MockRouter, client: Client) -> None:
+    api.get(f"/3.0/mosque/{UUID}/flash-message").respond(
+        json=example("mosquesFlashMessage", "montreal")
+    )
+
+    flash = await resolve(client.mosques.flash_message(UUID))
+
+    assert isinstance(flash, FlashMessage)
+    assert flash.content == "Salât Al-Eid 7h00 Wednesday 27th of March"
+    assert flash.start_date is None
+    assert flash.end_date == date(2026, 5, 27)
+    assert flash.color == "#FFFFFF"
+    assert flash.orientation == "ltr"
+
+
+async def test_no_flash_message(api: respx.MockRouter, client: Client) -> None:
+    # The body is `null`: respx sends no body at all for `json=None`.
+    api.get(f"/3.0/mosque/{UUID}/flash-message").respond(
+        text=json.dumps(example("mosquesFlashMessage", "grande-mosquee-de-paris")),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert await resolve(client.mosques.flash_message(UUID)) is None

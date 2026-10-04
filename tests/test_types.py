@@ -23,6 +23,7 @@ from .conftest import EXAMPLES, UUID
 ADAPTERS: dict[str, TypeAdapter[Any]] = {
     "authLogin": TypeAdapter(Account),
     "mosquesConfig": TypeAdapter(MosqueConfig),
+    "mosquesFlashMessage": TypeAdapter(FlashMessage | None),
     "mosquesHijriSettings": TypeAdapter(HijriSettings),
     "mosquesPrayerTimes": TypeAdapter(PrayerTimes),
     "mosquesSearch": TypeAdapter(list[Mosque]),

@@ -67,6 +67,7 @@ with MawaqitClient(token="...") as client:
 | `client.mosques.prayer_times(uuid)` | The `PrayerTimes` of the year, with iqama |
 | `client.mosques.hijri_settings(uuid)` | The `HijriSettings` of the mosque |
 | `client.mosques.config(uuid)` | The `MosqueConfig`: the settings of the mosque screens |
+| `client.mosques.flash_message(uuid)` | The `FlashMessage` of the mosque screens, or `None` |
 
 Responses are [Pydantic](https://docs.pydantic.dev) models, from
 `mawaqit.types`, with snake_case attributes: `mosque.women_space`,

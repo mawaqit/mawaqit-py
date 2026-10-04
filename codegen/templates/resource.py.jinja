@@ -11,7 +11,7 @@ from ..types import {{ resource.types | sort | join(", ") }}
 __all__ = ["Async{{ resource.name }}", "{{ resource.name }}"]
 
 {% for operation in resource.operations %}
-{{ operation.adapter }} = TypeAdapter({{ operation.returns }})
+{{ operation.adapter }} = TypeAdapter[{{ operation.returns }}]({{ operation.returns }})
 {% endfor %}
 {% for async in [True, False] %}
 

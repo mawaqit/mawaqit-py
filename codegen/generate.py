@@ -266,6 +266,13 @@ class Generator:
             name = str(schema["$ref"]).removeprefix("#/components/schemas/")
             refs.add(name)
             return name
+        if "anyOf" in schema:
+            # Only `anyOf: [X, {type: "null"}]`, for a nullable reference.
+            match schema["anyOf"]:
+                case [other, {"type": "null"}] if "$ref" in other:
+                    return f"{self.python_type(other, refs)} | None"
+                case _:
+                    raise SpecError(f"unsupported anyOf {schema['anyOf']!r}")
         types = schema.get("type")
         types = [types] if isinstance(types, str) else list(types or [])
         nullable = "null" in types
