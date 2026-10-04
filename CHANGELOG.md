@@ -3,6 +3,13 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.0.0b4 - 2026-10-04
+
+### Added
+
+- `client.mosques.flash_message()`: the flash message of a mosque, or `None`,
+  from a much smaller response than `client.mosques.prayer_times()`.
+
 ## 2.0.0b3 - 2026-10-04
 
 ### Changed
