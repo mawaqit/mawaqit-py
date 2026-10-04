@@ -1,6 +1,6 @@
 {
   "repository": "mawaqit/api-spec",
-  "ref": "v0.3.0",
+  "ref": "v0.4.0",
   "path": "openapi/mawaqit.yaml",
-  "sha256": "9705eb05598a1c43e9afd85524ac936c9e0a5d2c884679ff1f843d4415279a26"
+  "sha256": "6bc94cda9be3b098dc19ff25161933c01673b08cda0c861645ebe2a3b1d96a64"
 }

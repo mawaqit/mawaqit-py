@@ -3,6 +3,13 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.0.0b5 - 2026-10-04
+
+### Added
+
+- `client.mosques.get()`: the UUID, name and type of a mosque from its ID. Homes
+  are found this way: `client.mosques.search()` does not return them.
+
 ## 2.0.0b4 - 2026-10-04
 
 ### Added
