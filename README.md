@@ -30,8 +30,7 @@ settings.
 pip install mawaqit
 ```
 
-Python 3.10 or newer. Version 2.0 is in beta: install it with
-`pip install --pre mawaqit`.
+Python 3.10 or newer.
 
 ## Usage
 

@@ -3,6 +3,11 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.0.0 - 2026-10-05
+
+The first stable release of the new library, with no changes since 2.0.0b5.
+The changes since 1.x are those of the betas below.
+
 ## 2.0.0b5 - 2026-10-04
 
 ### Added
