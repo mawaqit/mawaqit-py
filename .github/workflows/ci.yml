@@ -39,12 +39,15 @@ jobs:
   test:
     name: >-
       Tests on Python ${{ matrix.python }}
-      ${{ matrix.resolution && '(lowest dependencies)' || '' }}
+      ${{ matrix.resolution == 'lowest-direct' && '(lowest dependencies)' || '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # A dimension of its own: otherwise the include below replaces the locked
+        # 3.10 job instead of adding one.
+        resolution: [locked]
         include:
           - python: "3.10"
             resolution: lowest-direct
@@ -60,10 +63,10 @@ jobs:
         env:
           RESOLUTION: ${{ matrix.resolution }}
         run: |
-          if [ -n "$RESOLUTION" ]; then
-            uv sync --resolution "$RESOLUTION"
-          else
+          if [ "$RESOLUTION" = locked ]; then
             uv sync --locked
+          else
+            uv sync --resolution "$RESOLUTION"
           fi
       - run: uv run --no-sync pytest --cov
 

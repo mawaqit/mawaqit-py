@@ -75,11 +75,15 @@ def test_forced_to_30(day: date, expected: HijriDate) -> None:
     ("now", "timezone", "expected"),
     [
         # In Paris it is already 29 March, so the adjusted day is 30 March.
-        ("2026-03-28 23:30Z", "Europe/Paris", HijriDate(1447, HijriMonth.SHAWWAL, 12)),
-        ("2026-03-28 23:30Z", "UTC", HijriDate(1447, HijriMonth.SHAWWAL, 11)),
+        (
+            "2026-03-28 23:30+00:00",
+            "Europe/Paris",
+            HijriDate(1447, HijriMonth.SHAWWAL, 12),
+        ),
+        ("2026-03-28 23:30+00:00", "UTC", HijriDate(1447, HijriMonth.SHAWWAL, 11)),
         # 24 hours after 00:30 on 25 October would still be 25 October in Paris.
         (
-            "2026-10-24 22:30Z",
+            "2026-10-24 22:30+00:00",
             ZoneInfo("Europe/Paris"),
             HijriDate(1448, HijriMonth.JUMADA_AL_ULA, 15),
         ),
