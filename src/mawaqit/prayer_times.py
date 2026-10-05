@@ -62,8 +62,9 @@ _ROW_LENGTHS = (6, 7)
 _WITH_IMSAK = 7
 _IQAMA_LENGTH = 5
 _FRIDAY = 4
-# An iqama later than this after its adhan is an error of the mosque.
-_MAX_IQAMA_DELAY = timedelta(hours=12)
+# An iqama this late after its adhan, or an Isha this late after Maghrib, is a mistake
+# of the mosque.
+_HALF_DAY = timedelta(hours=12)
 # ASCII digits only, like the TypeScript library.
 _TIME = re.compile(r"([0-9]{1,2}):([0-9]{2})")
 _MINUTES = re.compile(r"\+?[0-9]+")
@@ -342,7 +343,8 @@ def _day(prayer_times: PrayerTimesLike, day: date, tz: tzinfo) -> PrayerDay | No
     last: Prayer | None = None
     for i, name in enumerate(_CALENDAR):
         iqama = None if iqamas is None or name == "shuruq" else iqamas[max(i - 1, 0)]
-        prayers[name] = _prayer(name, times[i], iqama, day, tz, after=last)
+        after = last if name == "isha" else None
+        prayers[name] = _prayer(name, times[i], iqama, day, tz, after=after)
         last = prayers[name] or last
 
     fajr = prayers["fajr"]
@@ -396,11 +398,17 @@ def _prayer(
     if parsed is None:
         return None
     at = _zoned(day, parsed, tz)
-    # A time earlier than the prayer before it is after midnight, like Isha far from
-    # the equator.
-    if after and at.timestamp() < after.at.timestamp():
+    # An Isha earlier than Maghrib is after midnight, in summer far from the equator.
+    # Not any other prayer: a mistake of the mosque, like 16:30 for Fajr, would move the
+    # whole day.
+    next_day = _zoned(day + timedelta(days=1), parsed, tz)
+    if (
+        after
+        and at.timestamp() < after.at.timestamp()
+        and next_day.timestamp() - after.at.timestamp() < _HALF_DAY.total_seconds()
+    ):
         day += timedelta(days=1)
-        at = _zoned(day, parsed, tz)
+        at = next_day
     return Prayer(name, at, _iqama(at, iqama, day, tz) if iqama else None)
 
 
@@ -418,7 +426,7 @@ def _iqama(adhan: datetime, value: str, day: date, tz: tzinfo) -> datetime | Non
         if at.timestamp() < adhan.timestamp():
             at = _zoned(day + timedelta(days=1), parsed, tz)
     delay = at.timestamp() - adhan.timestamp()
-    return at if delay < _MAX_IQAMA_DELAY.total_seconds() else None
+    return at if delay < _HALF_DAY.total_seconds() else None
 
 
 def _parse_time(value: str | None) -> time | None:

@@ -3,6 +3,14 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- A time entered by mistake earlier than the prayer before it, like 16:30 for Fajr,
+  moved the following prayers of the day to the next day. Only an Isha before Maghrib
+  is now after midnight, and only within 12 hours of Maghrib.
+
 ## 2.1.0b1 - 2026-10-05
 
 ### Added
