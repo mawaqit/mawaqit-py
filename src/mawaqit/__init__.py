@@ -11,7 +11,7 @@ Example:
     ```
 """
 
-from . import hijri, types
+from . import hijri, prayer_times, types
 from ._base_client import DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT
 from ._client import AsyncMawaqitClient, MawaqitClient
 from ._exceptions import (
@@ -50,5 +50,6 @@ __all__ = [
     "RateLimitError",
     "__version__",
     "hijri",
+    "prayer_times",
     "types",
 ]
