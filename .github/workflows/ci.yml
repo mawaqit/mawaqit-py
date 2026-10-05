@@ -90,10 +90,11 @@ jobs:
           import importlib.resources
 
           import mawaqit
-          from mawaqit import AsyncMawaqitClient, MawaqitClient, hijri, types
+          from mawaqit import AsyncMawaqitClient, MawaqitClient, hijri, prayer_times, types
 
           assert importlib.resources.files("mawaqit").joinpath("py.typed").is_file()
           assert MawaqitClient().mosques and AsyncMawaqitClient().auth
+          assert prayer_times.prayer_day and prayer_times.next_prayer
           print("mawaqit", mawaqit.__version__, hijri.kuwaiti.__name__, types.Mosque)
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

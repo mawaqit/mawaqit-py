@@ -21,6 +21,8 @@ settings.
   editor.
 - **Robust**: retries with backoff, timeouts, and one exception per kind of
   error.
+- **Helpers** for the prayers of a day, the next prayer and the Hijri date, which
+  handle iqama offsets, Imsak, Jumu'a and daylight saving time.
 - **Generated from the OpenAPI description of the API**, so the methods and
   models follow it exactly.
 
@@ -187,8 +189,9 @@ at the `INFO` level. The token is never logged.
   client = AsyncMawaqitClient(token=token, http_client=get_async_client(hass))
   ```
 
-- Pass a `tzinfo` rather than a name to `hijri.today()`, to avoid loading a
-  time zone in the event loop: `hijri.today(settings, dt_util.get_time_zone(name))`.
+- Pass a `tzinfo` rather than a name to `hijri.today()`, and as `timezone=` to the
+  functions of `mawaqit.prayer_times`, to avoid loading a time zone in the event
+  loop: `hijri.today(settings, dt_util.get_time_zone(name))`.
 
 ## Versioning
 
