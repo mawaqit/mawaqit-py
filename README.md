@@ -21,6 +21,8 @@ settings.
   editor.
 - **Robust**: retries with backoff, timeouts, and one exception per kind of
   error.
+- **Helpers** for the prayers of a day, the next prayer and the Hijri date, which
+  handle iqama offsets, Imsak, Jumu'a and daylight saving time.
 - **Generated from the OpenAPI description of the API**, so the methods and
   models follow it exactly.
 
@@ -78,6 +80,41 @@ of the API, and fields the API adds later are kept in `model_extra`.
 
 Every method but `search()` needs an API token, passed as `token=` or set in
 the `MAWAQIT_TOKEN` environment variable.
+
+### Prayer times of a day
+
+`client.mosques.prayer_times()` returns the times of the whole year, as the mosque
+entered them. `mawaqit.prayer_times` reads them for a day, as datetimes in the time
+zone of the mosque, with the iqama resolved, Imsak, and Jumu'a on Fridays:
+
+```python
+from mawaqit.prayer_times import next_prayer, night, prayer_day
+
+times = await client.mosques.prayer_times(uuid)
+
+today = prayer_day(times)  # Or prayer_day(times, date(2026, 10, 5)).
+today.fajr.time  # "06:12"
+today.fajr.at  # datetime(2026, 10, 5, 6, 12, tzinfo=ZoneInfo("Europe/Paris"))
+today.fajr.iqama  # 06:30, even when the mosque entered "+18"
+today.jumua  # The Jumu'a prayers on Fridays, or ()
+
+upcoming = next_prayer(times)  # Jumu'a instead of Dhuhr on Fridays.
+night(times).last_third_start  # The thirds of the night, from Maghrib to Fajr.
+```
+
+They handle what the raw calendar leaves to you:
+
+- Mosques that display Imsak have 7 times a day, with Sabah as Fajr.
+- Iqama times are `HH:MM` or minutes after the adhan, like `+10`.
+- An Isha after midnight, in summer far from the equator, belongs to the day before.
+- Times are converted in the time zone of the mosque, through daylight saving time
+  changes.
+- A time entered by hand that is invalid gives a `None` prayer, rather than a wrong
+  one.
+
+`next_prayer()` takes `shuruq`, `jumua` and `iqama` keywords: `iqama=True` gives the
+next iqama rather than the next adhan. Every function takes a `timezone=`, to avoid
+loading the time zone of the mosque, like in Home Assistant.
 
 ### Hijri date
 
@@ -152,8 +189,9 @@ at the `INFO` level. The token is never logged.
   client = AsyncMawaqitClient(token=token, http_client=get_async_client(hass))
   ```
 
-- Pass a `tzinfo` rather than a name to `hijri.today()`, to avoid loading a
-  time zone in the event loop: `hijri.today(settings, dt_util.get_time_zone(name))`.
+- Pass a `tzinfo` rather than a name to `hijri.today()`, and as `timezone=` to the
+  functions of `mawaqit.prayer_times`, to avoid loading a time zone in the event
+  loop: `hijri.today(settings, dt_util.get_time_zone(name))`.
 
 ## Versioning
 

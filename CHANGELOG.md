@@ -3,6 +3,14 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- `mawaqit.prayer_times`: `prayer_day()`, the prayers of a day as datetimes, with
+  their iqama, Imsak and Jumu'a; `next_prayer()`; and `night()`, the thirds of the
+  night. Like `@mawaqit/sdk/prayer-times` in TypeScript.
+
 ## 2.0.0 - 2026-10-05
 
 The first stable release of the new library, with no changes since 2.0.0b5.
