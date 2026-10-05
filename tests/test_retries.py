@@ -92,7 +92,7 @@ async def test_without_retries(
         ("Sat, 03 Oct 2026 12:00:30 GMT", 30),
     ],
 )
-@time_machine.travel("2026-10-03 12:00:00Z", tick=False)
+@time_machine.travel("2026-10-03 12:00:00+00:00", tick=False)
 async def test_honors_retry_after(
     api: respx.MockRouter,
     client: Client,
