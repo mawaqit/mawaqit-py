@@ -295,6 +295,27 @@ class TestPrayerDay:
             "2026-06-20T22:40:00+00:00",
         )
 
+    def test_a_mistake_does_not_move_the_next_prayers_to_the_next_day(self) -> None:
+        # 16:30 for Fajr, rather than 06:30.
+        row = ["16:30", "07:30", "13:00", "16:00", "19:00", "20:30"]
+        day = prayer_day(Times(rows={"01-01": row}), date(2026, 1, 1))
+
+        assert day is not None
+        assert [times(p)[2] for p in (day.fajr, day.shuruq, day.dhuhr, day.isha)] == [
+            "2026-01-01T15:30:00+00:00",
+            "2026-01-01T06:30:00+00:00",
+            "2026-01-01T12:00:00+00:00",
+            "2026-01-01T19:30:00+00:00",
+        ]
+
+    def test_an_isha_before_maghrib_by_mistake_stays_the_same_day(self) -> None:
+        # The next day would be 23:30 after Maghrib.
+        row = ["06:00", "07:30", "13:00", "16:00", "21:00", "20:30"]
+        day = prayer_day(Times(rows={"01-01": row}), date(2026, 1, 1))
+
+        assert day is not None
+        assert times(day.isha)[2] == "2026-01-01T19:30:00+00:00"
+
     @pytest.mark.parametrize("time", ["--", "", "24:00", "7h05", "\u0667:\u0660\u0665"])
     def test_an_invalid_time_entered_by_hand_is_none(self, time: str) -> None:
         row = ["06:00", "07:30", "13:00", time, "19:00", "20:30"]
