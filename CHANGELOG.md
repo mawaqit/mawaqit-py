@@ -3,7 +3,10 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
-## 2.3.0 - 2026-10-08
+## 2.3.1 - 2026-10-08
+
+The first release of these changes: 2.3.0 was tagged by mistake before them, and
+not published.
 
 ### Added
 
