@@ -224,9 +224,16 @@ class BaseClient(ABC, Generic[HttpClientT]):
 
     @staticmethod
     def _process_response(
-        response: httpx.Response, response_type: pydantic.TypeAdapter[T]
+        response: httpx.Response,
+        response_type: pydantic.TypeAdapter[T],
+        *,
+        empty_as_none: bool = False,
     ) -> T:
-        """Return the response parsed, or raise its error."""
+        """Return the response parsed, or raise its error.
+
+        With `empty_as_none`, an empty array, the answer of the API for nothing,
+        is returned as `None`.
+        """
         if not response.is_success:
             raise status_error(response)
         try:
@@ -234,6 +241,8 @@ class BaseClient(ABC, Generic[HttpClientT]):
         except ValueError as err:
             msg = "MAWAQIT did not answer with JSON."
             raise APIResponseValidationError(msg, response, body=response.text) from err
+        if empty_as_none and data == []:
+            data = None
         try:
             return response_type.validate_python(data)
         except pydantic.ValidationError as err:
@@ -304,6 +313,7 @@ class AsyncAPIClient(BaseClient[httpx.AsyncClient]):
         params: dict[str, Any] | None = None,
         basic_auth: tuple[str, str] | None = None,
         authenticated: bool = True,
+        empty_as_none: bool = False,
     ) -> T:
         """Send a request, retrying temporary failures, and parse its response."""
         request = self._build_request(
@@ -325,7 +335,9 @@ class AsyncAPIClient(BaseClient[httpx.AsyncClient]):
             else:
                 _log_response(response)
                 if not self._should_retry(retries_taken, response):
-                    return self._process_response(response, response_type)
+                    return self._process_response(
+                        response, response_type, empty_as_none=empty_as_none
+                    )
             await anyio.sleep(self._retry_delay(request, retries_taken, response))
             retries_taken += 1
 
@@ -364,6 +376,7 @@ class SyncAPIClient(BaseClient[httpx.Client]):
         params: dict[str, Any] | None = None,
         basic_auth: tuple[str, str] | None = None,
         authenticated: bool = True,
+        empty_as_none: bool = False,
     ) -> T:
         """Send a request, retrying temporary failures, and parse its response."""
         request = self._build_request(
@@ -385,6 +398,8 @@ class SyncAPIClient(BaseClient[httpx.Client]):
             else:
                 _log_response(response)
                 if not self._should_retry(retries_taken, response):
-                    return self._process_response(response, response_type)
+                    return self._process_response(
+                        response, response_type, empty_as_none=empty_as_none
+                    )
             time.sleep(self._retry_delay(request, retries_taken, response))
             retries_taken += 1

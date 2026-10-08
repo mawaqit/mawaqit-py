@@ -3,6 +3,20 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.2.0 - 2026-10-08
+
+### Added
+
+- `client.hadiths.random()`: a random hadith in a language, as the mosque
+  screens show it, or `None` when none is shorter than `max_length`. It needs no
+  API token. Like `client.hadiths.random()` in TypeScript.
+
+### Fixed
+
+- `client.mosques.search()` sends the API token: the API has answered 401
+  without one since 6 October 2026, so the search raised an
+  `AuthenticationError`.
+
 ## 2.1.0 - 2026-10-05
 
 `mawaqit.prayer_times` of 2.1.0b1, with this fix.

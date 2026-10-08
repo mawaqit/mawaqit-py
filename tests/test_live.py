@@ -20,8 +20,20 @@ pytestmark = pytest.mark.live
 needs_token = pytest.mark.skipif(not LIVE_TOKEN, reason="MAWAQIT_TOKEN is not set")
 
 
-async def test_search() -> None:
+async def test_random_hadith() -> None:
     async with AsyncMawaqitClient() as client:
+        hadith = await client.hadiths.random(lang="fr")
+        none = await client.hadiths.random(lang="fr", max_length=1)
+
+    assert hadith is not None
+    assert hadith.lang == "fr"
+    assert not hadith.model_extra
+    assert none is None
+
+
+@needs_token
+async def test_search() -> None:
+    async with AsyncMawaqitClient(token=LIVE_TOKEN) as client:
         around = await client.mosques.search(lat=48.8414, lon=2.3557)
         by_words = await client.mosques.search(word="grande mosquee de paris")
 
