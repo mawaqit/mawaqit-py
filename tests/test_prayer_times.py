@@ -457,6 +457,10 @@ class TestNextPrayer:
             "jumua",
             "2026-01-09T12:50:00+00:00",
         )
+        # On a Friday after the last Jumu'a, the one of the next Friday.
+        assert self.next("2026-01-02T14:00", prayer="jumua")[2] == (
+            "2026-01-09T12:50:00+00:00"
+        )
 
     def test_one_prayer_its_iqama_and_an_isha_after_midnight(self) -> None:
         data = Times(

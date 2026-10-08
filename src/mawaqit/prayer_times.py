@@ -267,9 +267,9 @@ def next_prayer(
         raise ValueError(msg)
     today = now.astimezone(tz).date()
     found: tuple[float, Prayer] | None = None
-    days = 3 if prayer is None else _SEARCH_DAYS
+    last = 2 if prayer is None else _SEARCH_DAYS - 1
     # From yesterday, for an Isha after midnight.
-    for offset in range(-1, days - 1):
+    for offset in range(-1, last + 1):
         day = _day(prayer_times, today + timedelta(days=offset), tz)
         if day is None:
             continue
