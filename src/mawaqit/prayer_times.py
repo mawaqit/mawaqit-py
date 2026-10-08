@@ -62,6 +62,8 @@ _ROW_LENGTHS = (6, 7)
 _WITH_IMSAK = 7
 _IQAMA_LENGTH = 5
 _FRIDAY = 4
+# How many days a search for one prayer looks ahead: a week reaches the next Jumu'a.
+_SEARCH_DAYS = 8
 # An iqama this late after its adhan, or an Isha this late after Maghrib, is a mistake
 # of the mosque.
 _HALF_DAY = timedelta(hours=12)
@@ -225,12 +227,15 @@ def next_prayer(
     shuruq: bool = False,
     jumua: bool = True,
     iqama: bool = False,
+    prayer: PrayerName | None = None,
     timezone: tzinfo | None = None,
 ) -> Prayer | None:
     """Return the next prayer: Fajr, Dhuhr, Asr, Maghrib or Isha, or Jumu'a on Fridays.
 
     After Isha, this is the Fajr of the next day. An Isha after midnight, in summer
     far from the equator, is still the next prayer until its time.
+
+    With `prayer`, the next time of this prayer, like the next Maghrib for iftar.
 
     Args:
         prayer_times: The prayer times of the mosque, from
@@ -240,6 +245,9 @@ def next_prayer(
         jumua: Whether Jumu'a replaces Dhuhr on Fridays, when the mosque has one.
         iqama: Whether to search the next iqama rather than the next adhan: between
             the adhan and the iqama, the prayer is still the next one.
+        prayer: Only this prayer, like `"maghrib"` for the next Maghrib, every day.
+            `shuruq` and `jumua` are then ignored: `"dhuhr"` is Dhuhr on Fridays too,
+            and `"jumua"` the next Jumu'a.
         timezone: The time zone of the mosque, to avoid loading it from its
             `timezone`.
 
@@ -259,27 +267,36 @@ def next_prayer(
         raise ValueError(msg)
     today = now.astimezone(tz).date()
     found: tuple[float, Prayer] | None = None
-    # Yesterday for an Isha after midnight.
-    for offset in (-1, 0, 1, 2):
+    last = 2 if prayer is None else _SEARCH_DAYS - 1
+    # From yesterday, for an Isha after midnight.
+    for offset in range(-1, last + 1):
         day = _day(prayer_times, today + timedelta(days=offset), tz)
         if day is None:
             continue
         on_jumua = jumua and bool(day.jumua)
-        prayers = [
-            day.fajr,
-            day.shuruq if shuruq else None,
-            None if on_jumua else day.dhuhr,
-            *(day.jumua if on_jumua else ()),
-            day.asr,
-            day.maghrib,
-            day.isha,
-        ]
-        for prayer in prayers:
-            if prayer is None:
+        prayers: list[Prayer | None]
+        if prayer == "jumua":
+            prayers = list(day.jumua)
+        elif prayer is not None:
+            prayers = [getattr(day, prayer)]
+        else:
+            prayers = [
+                day.fajr,
+                day.shuruq if shuruq else None,
+                None if on_jumua else day.dhuhr,
+                *(day.jumua if on_jumua else ()),
+                day.asr,
+                day.maghrib,
+                day.isha,
+            ]
+        for candidate in prayers:
+            if candidate is None:
                 continue
-            at = ((prayer.iqama or prayer.at) if iqama else prayer.at).timestamp()
+            at = (
+                (candidate.iqama or candidate.at) if iqama else candidate.at
+            ).timestamp()
             if at > now.timestamp() and (found is None or at < found[0]):
-                found = (at, prayer)
+                found = (at, candidate)
     return found[1] if found else None
 
 

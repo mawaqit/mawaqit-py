@@ -100,6 +100,7 @@ today.fajr.iqama  # 06:30, even when the mosque entered "+18"
 today.jumua  # The Jumu'a prayers on Fridays, or ()
 
 upcoming = next_prayer(times)  # Jumu'a instead of Dhuhr on Fridays.
+iftar = next_prayer(times, prayer="maghrib")  # The next Maghrib, today or tomorrow.
 night(times).last_third_start  # The thirds of the night, from Maghrib to Fajr.
 ```
 
@@ -113,8 +114,9 @@ They handle what the raw calendar leaves to you:
 - A time entered by hand that is invalid gives a `None` prayer, rather than a wrong
   one.
 
-`next_prayer()` takes `shuruq`, `jumua` and `iqama` keywords: `iqama=True` gives the
-next iqama rather than the next adhan. Every function takes a `timezone=`, to avoid
+`next_prayer()` takes `shuruq`, `jumua`, `iqama` and `prayer` keywords: `iqama=True`
+gives the next iqama rather than the next adhan, and `prayer` the next time of one
+prayer, like `"maghrib"` for iftar or `"jumua"` for the next Friday. Every function takes a `timezone=`, to avoid
 loading the time zone of the mosque, like in Home Assistant.
 
 ### Hijri date
