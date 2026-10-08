@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from mawaqit.types import (
     FlashMessage,
+    Hadith,
     HijriSettings,
     Mosque,
     MosqueConfig,
@@ -54,6 +55,8 @@ async def test_search_by_words(api: respx.MockRouter, client: Client) -> None:
     assert dict(route.calls.last.request.url.params) == {
         "word": "grande mosquee de paris"
     }
+    # The API has needed the token for searches since October 2026.
+    assert "Api-Access-Token" in route.calls.last.request.headers
     assert mosques[0].label == "GRANDE MOSQUÉE DE PARIS"
     assert mosques[0].proximity is None
 
@@ -156,3 +159,41 @@ async def test_no_flash_message(api: respx.MockRouter, client: Client) -> None:
     )
 
     assert await resolve(client.mosques.flash_message(UUID)) is None
+
+
+async def test_random_hadith(api: respx.MockRouter, client: Client) -> None:
+    route = api.get("/2.0/hadith/random").respond(
+        json=example("hadithsRandom", "french")
+    )
+
+    hadith = await resolve(client.hadiths.random(lang="fr-ar", max_length=300))
+
+    request = route.calls.last.request
+    assert dict(request.url.params) == {"lang": "fr-ar", "maxLength": "300"}
+    assert "Api-Access-Token" not in request.headers
+    assert isinstance(hadith, Hadith)
+    assert hadith.lang == "fr"
+    assert "Allah" in hadith.text
+
+
+async def test_random_hadith_in_arabic_by_default(
+    api: respx.MockRouter, client: Client
+) -> None:
+    route = api.get("/2.0/hadith/random").respond(
+        json=example("hadithsRandom", "arabic")
+    )
+
+    hadith = await resolve(client.hadiths.random())
+
+    assert not route.calls.last.request.url.params
+    assert hadith is not None
+    assert hadith.lang == "ar"
+
+
+async def test_no_hadith_short_enough(api: respx.MockRouter, client: Client) -> None:
+    api.get("/2.0/hadith/random").respond(
+        json=example("hadithsRandom", "none-short-enough")
+    )
+
+    # The API answers [], which would not validate as a Hadith.
+    assert await resolve(client.hadiths.random(max_length=1)) is None

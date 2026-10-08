@@ -12,6 +12,7 @@ from pydantic import TypeAdapter
 from mawaqit.types import (
     Account,
     FlashMessage,
+    Hadith,
     HijriSettings,
     Mosque,
     MosqueConfig,
@@ -23,6 +24,8 @@ from .conftest import EXAMPLES, UUID
 
 ADAPTERS: dict[str, TypeAdapter[Any]] = {
     "authLogin": TypeAdapter(Account),
+    # The wire format: the client turns the empty array into `None`.
+    "hadithsRandom": TypeAdapter(Hadith | tuple[()]),
     "mosquesConfig": TypeAdapter(MosqueConfig),
     "mosquesFlashMessage": TypeAdapter(FlashMessage | None),
     "mosquesGet": TypeAdapter(MosqueSummary),

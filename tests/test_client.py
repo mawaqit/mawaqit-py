@@ -113,10 +113,10 @@ async def test_headers(api: respx.MockRouter, client: Client) -> None:
 
 
 async def test_public_operation_without_token(api: respx.MockRouter) -> None:
-    route = api.get("/2.0/mosque/search").respond(json=[])
+    route = api.get("/2.0/hadith/random").respond(json=[])
 
     async with AsyncMawaqitClient() as client:
-        assert await client.mosques.search(word="paris") == []
+        assert await client.hadiths.random() is None
 
     assert "Api-Access-Token" not in route.calls.last.request.headers
 
@@ -165,7 +165,7 @@ async def test_base_url_of_the_requests(monkeypatch: pytest.MonkeyPatch) -> None
         local = router.get("https://mawaqit.test/api/2.0/mosque/search")
         staging.respond(json=[])
         local.respond(json=[])
-        async with AsyncMawaqitClient() as client:
+        async with AsyncMawaqitClient(token=TOKEN) as client:
             await client.mosques.search(word="paris")
             other = client.with_options(base_url="https://mawaqit.test/api")
             await other.mosques.search(word="paris")

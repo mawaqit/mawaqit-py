@@ -13,8 +13,8 @@
 > access without notice. Thank you for respecting this.
 
 The official Python library for the [MAWAQIT](https://mawaqit.net) API: search
-mosques, and read their prayer times, iqama times, Hijri date and screen
-settings.
+mosques, read their prayer times, iqama times, Hijri date and screen settings,
+and draw a random hadith.
 
 - **Async and sync** clients, with the same methods.
 - **Fully typed**: every argument, response and field, documented in your
@@ -70,6 +70,7 @@ with MawaqitClient(token="...") as client:
 | `client.mosques.hijri_settings(uuid)` | The `HijriSettings` of the mosque |
 | `client.mosques.config(uuid)` | The `MosqueConfig`: the settings of the mosque screens |
 | `client.mosques.flash_message(uuid)` | The `FlashMessage` of the mosque screens, or `None` |
+| `client.hadiths.random(lang=...)` | A random `Hadith` in a language, or `None` |
 
 Responses are [Pydantic](https://docs.pydantic.dev) models, from
 `mawaqit.types`, with snake_case attributes: `mosque.women_space`,
@@ -78,8 +79,8 @@ of the API, and fields the API adds later are kept in `model_extra`.
 
 ### Authentication
 
-Every method but `search()` needs an API token, passed as `token=` or set in
-the `MAWAQIT_TOKEN` environment variable.
+Every method but `auth.login()` and `hadiths.random()` needs an API token,
+passed as `token=` or set in the `MAWAQIT_TOKEN` environment variable.
 
 ### Prayer times of a day
 

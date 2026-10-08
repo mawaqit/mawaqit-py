@@ -55,6 +55,15 @@ BASIC_AUTH_ARGS = {
 LITERALS = {"null": "None", "true": "True", "false": "False"}
 
 
+def is_empty_array(schema: object) -> bool:
+    """Whether a schema is `[]`, the API's answer for nothing, returned as `None`."""
+    return (
+        isinstance(schema, dict)
+        and schema.get("type") == "array"
+        and schema.get("maxItems") == 0
+    )
+
+
 def snake(name: str) -> str:
     """Return a camelCase name in snake_case: `hijriDateForceTo30` gives `..._to_30`."""
     return re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Za-z])(?=[0-9])", "_", name).lower()
@@ -113,6 +122,7 @@ class Operation:
     query_params: list[Param] = field(default_factory=list)
     basic_auth: bool = False
     authenticated: bool = True
+    empty_as_none: bool = False
 
     @property
     def signature(self) -> str:
@@ -140,6 +150,8 @@ class Operation:
             args.append("basic_auth=(email, password)")
         if not self.authenticated:
             args.append("authenticated=False")
+        if self.empty_as_none:
+            args.append("empty_as_none=True")
         args.append(f"response_type={self.adapter}")
         return ", ".join(args)
 
@@ -267,9 +279,12 @@ class Generator:
             refs.add(name)
             return name
         if "anyOf" in schema:
-            # Only `anyOf: [X, {type: "null"}]`, for a nullable reference.
+            # Only `anyOf: [X, {type: "null"}]`, for a nullable reference, or
+            # `anyOf: [X, []]`, whose empty array the client returns as `None`.
             match schema["anyOf"]:
-                case [other, {"type": "null"}] if "$ref" in other:
+                case [other, nullable] if "$ref" in other and (
+                    nullable == {"type": "null"} or is_empty_array(nullable)
+                ):
                     return f"{self.python_type(other, refs)} | None"
                 case _:
                     raise SpecError(f"unsupported anyOf {schema['anyOf']!r}")
@@ -377,7 +392,9 @@ class Generator:
         elif "minimum" in schema:
             notes.append(f"At least {schema['minimum']}")
         if "default" in schema:
-            notes.append(f"{schema['default']} by default")
+            default = schema["default"]
+            value = f"`{default}`" if isinstance(default, str) else default
+            notes.append(f"{value} by default")
         doc = self.pythonize(param["description"])
         if notes:
             doc += " " + ", ".join(notes) + "."
@@ -464,6 +481,9 @@ class Generator:
                         query_params=[p for p in params if p.wire_name not in path],
                         basic_auth=basic_auth,
                         authenticated="apiToken" in schemes,
+                        empty_as_none=is_empty_array(
+                            schema["schema"].get("anyOf", [None, None])[1]
+                        ),
                     )
                 )
                 resource.types |= refs
