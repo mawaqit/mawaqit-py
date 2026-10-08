@@ -16,7 +16,7 @@ from mawaqit.types import PrayerTimes
 from .conftest import example
 
 if TYPE_CHECKING:
-    from mawaqit.prayer_times import Prayer
+    from mawaqit.prayer_times import Prayer, PrayerName
 
 PARIS_TZ = ZoneInfo("Europe/Paris")
 # Real times, of the Grande Mosquée de Paris.
@@ -361,9 +361,18 @@ class TestNextPrayer:
         shuruq: bool = False,
         jumua: bool = True,
         iqama: bool = False,
+        prayer: PrayerName | None = None,
     ) -> tuple[str, str, str, str | None]:
-        prayer = next_prayer(data, utc(now), shuruq=shuruq, jumua=jumua, iqama=iqama)
-        return times(prayer)
+        return times(
+            next_prayer(
+                data,
+                utc(now),
+                shuruq=shuruq,
+                jumua=jumua,
+                iqama=iqama,
+                prayer=prayer,
+            )
+        )
 
     def test_the_next_adhan(self) -> None:
         assert self.next("2026-01-01T10:00")[:2] == ("dhuhr", "12:59")
@@ -429,6 +438,41 @@ class TestNextPrayer:
             "isha",
             "2026-06-20T22:30:00+00:00",
         )
+
+    def test_one_prayer_the_next_maghrib_today_or_tomorrow(self) -> None:
+        # Maghrib at 17:08 in Paris on 1 January.
+        assert self.next("2026-01-01T10:00", prayer="maghrib")[::2] == (
+            "maghrib",
+            "2026-01-01T16:08:00+00:00",
+        )
+        assert self.next("2026-01-01T17:00", prayer="maghrib")[::2] == (
+            "maghrib",
+            "2026-01-02T16:09:00+00:00",
+        )
+
+    def test_one_prayer_dhuhr_on_fridays_and_the_next_jumua(self) -> None:
+        # Friday 2 January, then Saturday 3 January.
+        assert self.next("2026-01-02T10:00", prayer="dhuhr")[0] == "dhuhr"
+        assert self.next("2026-01-03T10:00", prayer="jumua")[::2] == (
+            "jumua",
+            "2026-01-09T12:50:00+00:00",
+        )
+
+    def test_one_prayer_its_iqama_and_an_isha_after_midnight(self) -> None:
+        data = Times(
+            rows={"06-20": ["03:00", "05:00", "13:55", "18:00", "22:30", "00:30"]}
+        )
+
+        assert self.next("2026-01-01T12:02", prayer="dhuhr", iqama=True)[::2] == (
+            "dhuhr",
+            "2026-01-01T11:59:00+00:00",
+        )
+        assert self.next("2026-06-20T22:15", data, prayer="isha")[2] == (
+            "2026-06-20T22:30:00+00:00"
+        )
+
+    def test_one_prayer_the_mosque_never_has(self) -> None:
+        assert next_prayer(PARIS, utc("2026-01-01T10:00"), prayer="imsak") is None
 
     def test_skips_invalid_times_and_missing_days(self) -> None:
         data = Times(

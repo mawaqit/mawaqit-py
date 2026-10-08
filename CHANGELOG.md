@@ -3,6 +3,14 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.3.0 - 2026-10-08
+
+### Added
+
+- `next_prayer(prayer_times, prayer=...)`: the next time of one prayer, like the next
+  Maghrib for iftar, or the next Jumu'a. It looks up to a week ahead. Like
+  `nextPrayer(prayerTimes, { prayer })` in TypeScript.
+
 ## 2.2.0 - 2026-10-08
 
 ### Added
