@@ -3,6 +3,14 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.3.2 - 2026-10-14
+
+### Fixed
+
+- `client.mosques.config()` raised an `APIResponseValidationError` for the mosques whose screens
+  have a background color: the API then leaves `backgroundUrl` out, and
+  `MosqueConfig.background_url` is now `None`.
+
 ## 2.3.1 - 2026-10-08
 
 The first release of these changes: 2.3.0 was tagged by mistake before them, and
