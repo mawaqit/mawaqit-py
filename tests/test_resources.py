@@ -136,6 +136,20 @@ async def test_config_sabah_imsak_dates(api: respx.MockRouter, client: Client) -
     )
 
 
+async def test_config_without_background_url(
+    api: respx.MockRouter, client: Client
+) -> None:
+    data = example("mosquesConfig", "grande-mosquee-de-paris") | {
+        "backgroundType": "color"
+    }
+    del data["backgroundUrl"]
+    api.get(f"/3.0/mosque/{UUID}/config").respond(json=data)
+
+    config = await resolve(client.mosques.config(UUID))
+
+    assert config.background_url is None
+
+
 async def test_flash_message(api: respx.MockRouter, client: Client) -> None:
     api.get(f"/3.0/mosque/{UUID}/flash-message").respond(
         json=example("mosquesFlashMessage", "montreal")
