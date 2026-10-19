@@ -15,6 +15,12 @@ All notable changes to this library. It follows
   year, Ashura, Ramadan, Eid al-Fitr, Arafah and Eid al-Adha at a mosque, with
   its Hijri date and the days until it. Like `upcomingEvents()` in TypeScript.
 
+### Changed
+
+- The docstring of `client.mosques.hijri_settings()` no longer says that
+  `prayer_times()` lags behind: the API refreshes their cache together since
+  30 September 2026 (mawaqit/api-spec v0.5.3).
+
 ### Fixed
 
 - An adjustment outside -2 to 2 counts as 0. The API returns -3 for a French
