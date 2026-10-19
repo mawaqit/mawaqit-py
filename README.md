@@ -142,7 +142,8 @@ is reliable: mosques change their settings after the moon sighting.
 `hijri.month_name(today.month, "fr")` names the month in Arabic, English,
 French, German or Turkish, and in English for the other languages.
 `hijri.upcoming_events()` gives the next day of the Islamic new year, Ashura,
-Ramadan, Eid al-Fitr, Arafah and Eid al-Adha, an estimate after today:
+Ramadan, Eid al-Fitr, Arafah and Eid al-Adha, an estimate after today, and
+`hijri.event_name(event, "fr")` names them in the same languages:
 
 ```python
 events = hijri.upcoming_events(settings, "Europe/Paris")

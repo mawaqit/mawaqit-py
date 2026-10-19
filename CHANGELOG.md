@@ -3,6 +3,16 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.5.0 - 2026-10-19
+
+### Added
+
+- `hijri.event_name(event, language)`: the name of an Islamic event in
+  Arabic, English, French, German or Turkish, like `Aïd al-Adha` or
+  `Kurban Bayramı`, from a language or a language tag like `fr-FR`. Other
+  languages get the English name. Like `eventName(event, language)` in
+  TypeScript.
+
 ## 2.4.0 - 2026-10-19
 
 ### Added

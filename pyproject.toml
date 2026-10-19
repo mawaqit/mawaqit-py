@@ -79,6 +79,8 @@ select = [
 ignore = [
     "PLR0913",  # API methods mirror the parameters of their endpoint
 ]
+# Turkish names of the Hijri events (hijri.event_name) use the dotless i.
+allowed-confusables = ["ı"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "PLR2004", "S101", "S105", "S106", "FBT"]

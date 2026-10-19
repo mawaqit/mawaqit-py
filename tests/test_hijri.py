@@ -7,6 +7,7 @@ from dataclasses import replace
 from datetime import date, timedelta
 from itertools import pairwise
 from pathlib import Path
+from typing import get_args
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -238,3 +239,25 @@ def test_30th_forced_on_another_day_leaves_the_next_days_to_the_algorithm() -> N
         "1 Shawwal 1447",
         2,
     )
+
+
+@pytest.mark.parametrize(
+    ("language", "event", "name"),
+    [
+        ("fr-FR", "eid_al_adha", "Aïd al-Adha"),
+        ("ar", "arafah", "يوم عرفة"),
+        ("de", "eid_al_fitr", "Ramadanfest"),
+        ("tr_TR", "eid_al_adha", "Kurban Bayramı"),
+        ("es", "arafah", "Day of Arafah"),
+    ],
+)
+def test_event_name_in_a_language(
+    language: str, event: hijri.IslamicEvent, name: str
+) -> None:
+    assert hijri.event_name(event, language) == name
+
+
+@pytest.mark.parametrize("language", ["ar", "de", "en", "fr", "tr"])
+def test_six_event_names(language: str) -> None:
+    events = get_args(hijri.IslamicEvent)
+    assert len({hijri.event_name(event, language) for event in events}) == 6
