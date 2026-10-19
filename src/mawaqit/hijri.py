@@ -33,6 +33,7 @@ __all__ = [
     "HijriSettingsLike",
     "IslamicEvent",
     "UpcomingEvent",
+    "event_name",
     "from_gregorian",
     "kuwaiti",
     "month_name",
@@ -160,8 +161,13 @@ def month_name(month: HijriMonth, language: str = "en") -> str:
     Returns:
         The name of the month in this language.
     """
-    names = _MONTH_NAMES.get(language.replace("_", "-").partition("-")[0].lower())
+    names = _MONTH_NAMES.get(_language_of(language))
     return month.label if names is None else names[month - 1]
+
+
+def _language_of(tag: str) -> str:
+    """`fr` for `fr`, `fr-FR` or `fr_FR`."""
+    return tag.replace("_", "-").partition("-")[0].lower()
 
 
 @dataclass(frozen=True, order=True)
@@ -290,6 +296,67 @@ _EVENTS: dict[tuple[HijriMonth, int], IslamicEvent] = {
     (HijriMonth.DHU_AL_HIJJAH, 9): "arafah",
     (HijriMonth.DHU_AL_HIJJAH, 10): "eid_al_adha",
 }
+
+_ENGLISH_EVENT_NAMES: dict[IslamicEvent, str] = {
+    "islamic_new_year": "Islamic New Year",
+    "ashura": "Ashura",
+    "ramadan": "Ramadan",
+    "eid_al_fitr": "Eid al-Fitr",
+    "arafah": "Day of Arafah",
+    "eid_al_adha": "Eid al-Adha",
+}
+
+# The usual names in each language: the MAWAQIT website names no event yet.
+_EVENT_NAMES: dict[str, dict[IslamicEvent, str]] = {
+    "ar": {
+        "islamic_new_year": "رأس السنة الهجرية",
+        "ashura": "عاشوراء",
+        "ramadan": "رمضان",
+        "eid_al_fitr": "عيد الفطر",
+        "arafah": "يوم عرفة",
+        "eid_al_adha": "عيد الأضحى",
+    },
+    "de": {
+        "islamic_new_year": "Islamisches Neujahr",
+        "ashura": "Aschura",
+        "ramadan": "Ramadan",
+        "eid_al_fitr": "Ramadanfest",
+        "arafah": "Tag von Arafat",
+        "eid_al_adha": "Opferfest",
+    },
+    "en": _ENGLISH_EVENT_NAMES,
+    "fr": {
+        "islamic_new_year": "Nouvel An hégirien",
+        "ashura": "Achoura",
+        "ramadan": "Ramadan",
+        "eid_al_fitr": "Aïd al-Fitr",
+        "arafah": "Jour d'Arafat",
+        "eid_al_adha": "Aïd al-Adha",
+    },
+    "tr": {
+        "islamic_new_year": "Hicri Yılbaşı",
+        "ashura": "Aşure Günü",
+        "ramadan": "Ramazan",
+        "eid_al_fitr": "Ramazan Bayramı",
+        "arafah": "Arefe Günü",
+        "eid_al_adha": "Kurban Bayramı",
+    },
+}
+
+
+def event_name(event: IslamicEvent, language: str = "en") -> str:
+    """Return the name of an Islamic event, like `Eid al-Fitr`.
+
+    Args:
+        event: The event.
+        language: A language, like `fr`, or a language tag, like `fr-FR` or
+            `fr_FR`. Arabic, English, French, German and Turkish have their
+            names; the other languages get the English name.
+
+    Returns:
+        The name of the event in this language.
+    """
+    return _EVENT_NAMES.get(_language_of(language), _ENGLISH_EVENT_NAMES)[event]
 
 
 @dataclass(frozen=True)
