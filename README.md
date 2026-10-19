@@ -139,6 +139,17 @@ The date changes at midnight in the time zone of the mosque. Only today's date
 is reliable: mosques change their settings after the moon sighting.
 `hijri.from_gregorian(day, settings)` gives the date of another day.
 
+`hijri.month_name(today.month, "fr")` names the month in Arabic, English,
+French, German or Turkish, and in English for the other languages.
+`hijri.upcoming_events()` gives the next day of the Islamic new year, Ashura,
+Ramadan, Eid al-Fitr, Arafah and Eid al-Adha, an estimate after today:
+
+```python
+events = hijri.upcoming_events(settings, "Europe/Paris")
+ramadan = next(event for event in events if event.event == "ramadan")
+print(ramadan.date, ramadan.days_until)  # 2027-02-07 111
+```
+
 ### Errors
 
 Every error inherits from `MawaqitError`:

@@ -24,16 +24,20 @@ import math
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, tzinfo
 from enum import IntEnum
-from typing import Protocol
+from typing import Literal, Protocol
 from zoneinfo import ZoneInfo
 
 __all__ = [
     "HijriDate",
     "HijriMonth",
     "HijriSettingsLike",
+    "IslamicEvent",
+    "UpcomingEvent",
     "from_gregorian",
     "kuwaiti",
+    "month_name",
     "today",
+    "upcoming_events",
 ]
 
 # Julian Day Number of date.min, and of 16 July 622, the first day of the calendar.
@@ -81,6 +85,83 @@ _LABELS = {
     HijriMonth.DHU_AL_QIDAH: "Dhu al-Qi'dah",
     HijriMonth.DHU_AL_HIJJAH: "Dhu al-Hijjah",
 }
+
+# Arabic as on the mosque screens, the other languages as on the MAWAQIT website.
+_MONTH_NAMES = {
+    "ar": (
+        "محرم",
+        "صفر",
+        "ربيع الأول",
+        "ربيع الثاني",
+        "جمادى الأولى",
+        "جمادى الثانية",
+        "رجب",
+        "شعبان",
+        "رمضان",
+        "شوال",
+        "ذو القعدة",
+        "ذو الحجة",
+    ),
+    "de": (
+        "Muharram",
+        "Safar",
+        "Rabīʿ al-awwal",
+        "Rabīʿ ath-thānī",
+        "Dschumādā l-ūlā",
+        "Dschumādā l-āchira",
+        "Radschab",
+        "Schaʿbān",
+        "Ramadan",
+        "Schawwāl",
+        "Dhū l-qaʿda",
+        "Dhū l-ḥiddscha",
+    ),
+    "fr": (
+        "Mouharram",
+        "Safar",
+        "Rabi al-awal",
+        "Rabi al-thani",
+        "Joumada al-oula",
+        "Joumada al-thania",
+        "Rajab",
+        "Chaabane",
+        "Ramadan",
+        "Chawwal",
+        "Dhou al-qi'da",
+        "Dhou al-hijja",
+    ),
+    "tr": (
+        "Muharrem",
+        "Safer",
+        "Rebiülevvel",
+        "Rebiülahir",
+        "Cemaziyelevvel",
+        "Cemaziyelahir",
+        "Recep",
+        "Şaban",
+        "Ramazan",
+        "Şevval",
+        "Zilkade",
+        "Zilhicce",
+    ),
+}
+
+
+def month_name(month: HijriMonth, language: str = "en") -> str:
+    """Return the name of a Hijri month, like `Rabi' al-Awwal`.
+
+    Args:
+        month: The month.
+        language: A language, like `fr`, or a language tag, like `fr-FR` or
+            `fr_FR`. Arabic, English, French, German and Turkish have their
+            names, as on the MAWAQIT website; the other languages get the
+            English name.
+
+    Returns:
+        The name of the month in this language.
+    """
+    names = _MONTH_NAMES.get(language.replace("_", "-").partition("-")[0].lower())
+    return month.label if names is None else names[month - 1]
 
 
 @dataclass(frozen=True, order=True)
@@ -143,12 +224,14 @@ def kuwaiti(day: date) -> HijriDate:
 def from_gregorian(day: date, settings: HijriSettingsLike | None = None) -> HijriDate:
     """Return the Hijri date of a mosque on a Gregorian day.
 
-    Two cases differ from the MAWAQIT apps, which have bugs there:
+    Three cases differ from the MAWAQIT apps, which have bugs there:
 
     - The adjustment is added in calendar days, where the apps add 24 hours
       and are a day off for an hour around daylight saving time changes.
     - When the day is forced to 30 on the first day of a month, the date is the
       30th of the previous month, where the apps show the 30th of the new one.
+    - An adjustment outside -2 to 2 counts as 0. The API returns -3 for a French
+      mosque that has not chosen its adjustment yet, which the apps add as is.
 
     Args:
         day: The Gregorian day.
@@ -161,7 +244,7 @@ def from_gregorian(day: date, settings: HijriSettingsLike | None = None) -> Hijr
     """
     if settings is None:
         return kuwaiti(day)
-    hijri = kuwaiti(day + timedelta(days=settings.hijri_adjustment))
+    hijri = kuwaiti(day + timedelta(days=_adjustment(settings)))
     if not settings.hijri_date_force_to_30:
         return hijri
     if hijri.day != 1:
@@ -186,5 +269,98 @@ def today(settings: HijriSettingsLike, timezone: str | tzinfo) -> HijriDate:
     Returns:
         Today's Hijri date of the mosque.
     """
+    return from_gregorian(_day_in(timezone), settings)
+
+
+IslamicEvent = Literal[
+    "islamic_new_year", "ashura", "ramadan", "eid_al_fitr", "arafah", "eid_al_adha"
+]
+"""An event of the Islamic year.
+
+`islamic_new_year` on 1 Muharram, `ashura` on 10 Muharram, `ramadan` on
+1 Ramadan, `eid_al_fitr` on 1 Shawwal, `arafah` on 9 Dhu al-Hijjah and
+`eid_al_adha` on 10 Dhu al-Hijjah.
+"""
+
+_EVENTS: dict[tuple[HijriMonth, int], IslamicEvent] = {
+    (HijriMonth.MUHARRAM, 1): "islamic_new_year",
+    (HijriMonth.MUHARRAM, 10): "ashura",
+    (HijriMonth.RAMADAN, 1): "ramadan",
+    (HijriMonth.SHAWWAL, 1): "eid_al_fitr",
+    (HijriMonth.DHU_AL_HIJJAH, 9): "arafah",
+    (HijriMonth.DHU_AL_HIJJAH, 10): "eid_al_adha",
+}
+
+
+@dataclass(frozen=True)
+class UpcomingEvent:
+    """The next day of an Islamic event.
+
+    Attributes:
+        event: The event.
+        date: The Gregorian day.
+        hijri_date: The Hijri date of the day.
+        days_until: The number of days from today: 0 when the event is today.
+    """
+
+    event: IslamicEvent
+    date: date
+    hijri_date: HijriDate
+    days_until: int
+
+
+def upcoming_events(
+    settings: HijriSettingsLike, timezone: str | tzinfo
+) -> list[UpcomingEvent]:
+    """Return the next day of each Islamic event at a mosque, today included.
+
+    Only an event of today is certain. The days ahead assume that the mosque
+    keeps its settings, which it changes after the moon sighting: an event can
+    move by a day or two. When today is forced to the 30th where the Kuwaiti
+    algorithm starts a month, the month starts tomorrow.
+
+    Args:
+        settings: The Hijri settings of the mosque, from
+            `client.mosques.hijri_settings()`.
+        timezone: The time zone of the mosque, like `"Europe/Paris"`: the
+            `timezone` of `client.mosques.prayer_times()`.
+
+    Returns:
+        The six events, sorted by date.
+    """
+    start = _day_in(timezone)
+    adjustment = _adjustment(settings)
+    if (
+        settings.hijri_date_force_to_30
+        and kuwaiti(start + timedelta(days=adjustment)).day == 1
+    ):
+        adjustment -= 1
+    upcoming: list[UpcomingEvent] = []
+    days_until = 0
+    # Each event comes within a Hijri year, before the first one found comes again.
+    while len(upcoming) < len(_EVENTS):
+        day = start + timedelta(days=days_until)
+        hijri_date = (
+            from_gregorian(day, settings)
+            if days_until == 0
+            else kuwaiti(day + timedelta(days=adjustment))
+        )
+        event = _EVENTS.get((hijri_date.month, hijri_date.day))
+        if event is not None:
+            upcoming.append(UpcomingEvent(event, day, hijri_date, days_until))
+        days_until += 1
+    return upcoming
+
+
+# The adjustments the mosques can choose.
+_MAX_ADJUSTMENT = 2
+
+
+def _adjustment(settings: HijriSettingsLike) -> int:
+    adjustment = settings.hijri_adjustment
+    return adjustment if abs(adjustment) <= _MAX_ADJUSTMENT else 0
+
+
+def _day_in(timezone: str | tzinfo) -> date:
     tz = ZoneInfo(timezone) if isinstance(timezone, str) else timezone
-    return from_gregorian(datetime.now(tz).date(), settings)
+    return datetime.now(tz).date()

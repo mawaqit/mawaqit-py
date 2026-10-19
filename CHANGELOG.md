@@ -3,6 +3,24 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.4.0 - 2026-10-19
+
+### Added
+
+- `hijri.month_name(month, language)`: the name of a Hijri month in Arabic,
+  French, German or Turkish, as on the MAWAQIT website, from a language or a
+  language tag like `fr-FR`. Other languages get the English name of
+  `HijriMonth.label`. Like `monthName(month, language)` in TypeScript.
+- `hijri.upcoming_events(settings, timezone)`: the next day of the Islamic new
+  year, Ashura, Ramadan, Eid al-Fitr, Arafah and Eid al-Adha at a mosque, with
+  its Hijri date and the days until it. Like `upcomingEvents()` in TypeScript.
+
+### Fixed
+
+- An adjustment outside -2 to 2 counts as 0. The API returns -3 for a French
+  mosque that has not chosen its adjustment yet, so its Hijri date was 3 days
+  early.
+
 ## 2.3.2 - 2026-10-14
 
 ### Fixed
