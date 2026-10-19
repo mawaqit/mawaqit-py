@@ -163,3 +163,78 @@ def test_prayer_times_as_settings() -> None:
     assert hijri.from_gregorian(date(2026, 2, 18), prayer_times) == HijriDate(
         1447, HijriMonth.RAMADAN, 1
     )
+
+
+@pytest.mark.parametrize(
+    ("language", "name"),
+    [
+        ("fr", "Chaabane"),
+        ("fr-FR", "Chaabane"),
+        ("AR", "شعبان"),
+        ("de", "Schaʿbān"),
+        ("tr_TR", "Şaban"),
+        ("es", "Sha'ban"),
+    ],
+)
+def test_month_name_in_a_language(language: str, name: str) -> None:
+    assert hijri.month_name(HijriMonth.SHABAN, language) == name
+
+
+@pytest.mark.parametrize("language", ["ar", "de", "en", "fr", "tr"])
+def test_twelve_month_names(language: str) -> None:
+    assert len({hijri.month_name(month, language) for month in HijriMonth}) == 12
+
+
+@pytest.mark.parametrize("adjustment", [-3, 3])
+def test_adjustment_mosques_cannot_choose_counts_as_0(adjustment: int) -> None:
+    assert hijri.from_gregorian(date(2026, 2, 17), settings(adjustment)) == HijriDate(
+        1447, HijriMonth.RAMADAN, 1
+    )
+
+
+def events_at(now: str, hijri_settings: HijriSettings) -> list[tuple[object, ...]]:
+    with time_machine.travel(now, tick=False):
+        events = hijri.upcoming_events(hijri_settings, "Europe/Paris")
+    return [
+        (event.event, event.date.isoformat(), str(event.hijri_date), event.days_until)
+        for event in events
+    ]
+
+
+def test_upcoming_events() -> None:
+    """The next day of each event, sorted by date."""
+    assert events_at("2026-10-19 10:00+00:00", settings()) == [
+        ("ramadan", "2027-02-07", "1 Ramadan 1448", 111),
+        ("eid_al_fitr", "2027-03-09", "1 Shawwal 1448", 141),
+        ("arafah", "2027-05-15", "9 Dhu al-Hijjah 1448", 208),
+        ("eid_al_adha", "2027-05-16", "10 Dhu al-Hijjah 1448", 209),
+        ("islamic_new_year", "2027-06-05", "1 Muharram 1449", 229),
+        ("ashura", "2027-06-14", "10 Muharram 1449", 238),
+    ]
+
+
+def test_event_of_today() -> None:
+    with time_machine.travel("2026-02-17 10:00+00:00", tick=False):
+        events = hijri.upcoming_events(settings(), ZoneInfo("Europe/Paris"))
+    assert events[0] == hijri.UpcomingEvent(
+        "ramadan", date(2026, 2, 17), HijriDate(1447, HijriMonth.RAMADAN, 1), 0
+    )
+
+
+def test_30th_forced_on_the_first_day_of_a_month_starts_it_tomorrow() -> None:
+    """On the eve of Eid, the mosque shows 30 Ramadan for 1 Shawwal."""
+    assert events_at("2026-03-19 10:00+00:00", settings(force_30=True))[0] == (
+        "eid_al_fitr",
+        "2026-03-20",
+        "1 Shawwal 1447",
+        1,
+    )
+
+
+def test_30th_forced_on_another_day_leaves_the_next_days_to_the_algorithm() -> None:
+    assert events_at("2026-03-17 10:00+00:00", settings(force_30=True))[0] == (
+        "eid_al_fitr",
+        "2026-03-19",
+        "1 Shawwal 1447",
+        2,
+    )
