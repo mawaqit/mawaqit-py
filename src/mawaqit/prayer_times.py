@@ -19,6 +19,22 @@ Example:
 
 Times entered by hand by the mosque can be invalid: such a prayer is `None`, rather
 than wrong.
+
+Without a mosque, `calculate_prayer_times()` calculates the times of a year at a
+position, offline, in the same shape: these functions read them the same way.
+
+Example:
+    ```python
+    from mawaqit.prayer_times import (
+        CalculationPosition,
+        calculate_prayer_times,
+        default_calculation_settings,
+    )
+
+    position = CalculationPosition(48.85, 2.35, "Europe/Paris")
+    times = calculate_prayer_times(position, default_calculation_settings("FR"))
+    print(prayer_day(times).fajr.time)  # 06:42 on 26 November
+    ```
 """
 
 from __future__ import annotations
@@ -30,15 +46,41 @@ from datetime import timezone as dt_timezone
 from typing import TYPE_CHECKING, Literal, Protocol
 from zoneinfo import ZoneInfo
 
+from ._calculation.calculate import CalculatedPrayerTimes, calculate_prayer_times
+from ._calculation.methods import (
+    CALCULATION_METHODS,
+    CalculationMethodAngles,
+    calculation_method_name,
+    default_calculation_method,
+    default_calculation_settings,
+)
+from ._calculation.settings import (
+    CalculationMethod,
+    CalculationOptions,
+    CalculationPosition,
+    CalculationSettings,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
 __all__ = [
+    "CALCULATION_METHODS",
+    "CalculatedPrayerTimes",
+    "CalculationMethod",
+    "CalculationMethodAngles",
+    "CalculationOptions",
+    "CalculationPosition",
+    "CalculationSettings",
     "Night",
     "Prayer",
     "PrayerDay",
     "PrayerName",
     "PrayerTimesLike",
+    "calculate_prayer_times",
+    "calculation_method_name",
+    "default_calculation_method",
+    "default_calculation_settings",
     "next_prayer",
     "night",
     "prayer_day",

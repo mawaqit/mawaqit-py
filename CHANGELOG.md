@@ -3,6 +3,25 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.6.0 - 2026-11-14
+
+### Added
+
+- `prayer_times.calculate_prayer_times(position, settings, options)`: the prayer
+  times of a year at a position, calculated offline, in the shape of
+  `client.mosques.prayer_times()`, so `prayer_day()`, `next_prayer()`, `night()`
+  and `hijri.today()` read them. The astronomy is ported from adhan-js, with Dhuhr
+  a minute after the solar transit: the same minutes as `calculatePrayerTimes()`
+  of mawaqit-js 1.5.0, checked on thousands of days.
+- `CALCULATION_METHODS`, the angles of 17 methods;
+  `default_calculation_settings(country_code)` and
+  `default_calculation_method(country_code)`, those of a country, like 15° in
+  France; and `calculation_method_name(method, language)`, the name of a method in
+  Arabic, English, French, German or Turkish. With the types
+  `CalculationPosition`, `CalculationSettings`, `CalculationOptions`,
+  `CalculationMethod`, `CalculationMethodAngles` and `CalculatedPrayerTimes`. Like
+  `@mawaqit/sdk/prayer-times` 1.5.0 in TypeScript.
+
 ## 2.5.0 - 2026-10-19
 
 ### Added

@@ -27,6 +27,8 @@ from enum import IntEnum
 from typing import Literal, Protocol
 from zoneinfo import ZoneInfo
 
+from ._language import language_of
+
 __all__ = [
     "HijriDate",
     "HijriMonth",
@@ -161,13 +163,8 @@ def month_name(month: HijriMonth, language: str = "en") -> str:
     Returns:
         The name of the month in this language.
     """
-    names = _MONTH_NAMES.get(_language_of(language))
+    names = _MONTH_NAMES.get(language_of(language))
     return month.label if names is None else names[month - 1]
-
-
-def _language_of(tag: str) -> str:
-    """`fr` for `fr`, `fr-FR` or `fr_FR`."""
-    return tag.replace("_", "-").partition("-")[0].lower()
 
 
 @dataclass(frozen=True, order=True)
@@ -215,7 +212,12 @@ def kuwaiti(day: date) -> HijriDate:
     Returns:
         Its Hijri date.
     """
-    days = day.toordinal() + _JULIAN_DAY_OF_ORDINAL_0 - _EPOCH
+    return _kuwaiti_of_ordinal(day.toordinal())
+
+
+def _kuwaiti_of_ordinal(ordinal: int) -> HijriDate:
+    """Like `kuwaiti()`, for the ordinal of a day: past `date.max` too."""
+    days = ordinal + _JULIAN_DAY_OF_ORDINAL_0 - _EPOCH
     cycle, days = divmod(days, _CYCLE_DAYS)
     year = math.floor((days - _SHIFT) / _YEAR_DAYS)
     days -= math.floor(year * _YEAR_DAYS + _SHIFT)
@@ -356,7 +358,7 @@ def event_name(event: IslamicEvent, language: str = "en") -> str:
     Returns:
         The name of the event in this language.
     """
-    return _EVENT_NAMES.get(_language_of(language), _ENGLISH_EVENT_NAMES)[event]
+    return _EVENT_NAMES.get(language_of(language), _ENGLISH_EVENT_NAMES)[event]
 
 
 @dataclass(frozen=True)
