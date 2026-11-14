@@ -95,6 +95,11 @@ jobs:
           assert importlib.resources.files("mawaqit").joinpath("py.typed").is_file()
           assert MawaqitClient().mosques and AsyncMawaqitClient().auth
           assert prayer_times.prayer_day and prayer_times.next_prayer
+          position = prayer_times.CalculationPosition(21.42, 39.83, "Asia/Riyadh")
+          settings = prayer_times.default_calculation_settings("SA")
+          options = prayer_times.CalculationOptions(year=2026)
+          times = prayer_times.calculate_prayer_times(position, settings, options)
+          assert times.calendar[0]["1"] == ["05:37", "06:59", "12:25", "15:29", "17:50", "19:20"]
           print("mawaqit", mawaqit.__version__, hijri.kuwaiti.__name__, types.Mosque)
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

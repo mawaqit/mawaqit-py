@@ -14,7 +14,8 @@
 
 The official Python library for the [MAWAQIT](https://mawaqit.net) API: search
 mosques, read their prayer times, iqama times, Hijri date and screen settings,
-and draw a random hadith.
+and draw a random hadith. It also calculates prayer times for a position, without
+the API.
 
 - **Async and sync** clients, with the same methods.
 - **Fully typed**: every argument, response and field, documented in your
@@ -23,6 +24,8 @@ and draw a random hadith.
   error.
 - **Helpers** for the prayers of a day, the next prayer and the Hijri date, which
   handle iqama offsets, Imsak, Jumu'a and daylight saving time.
+- **Prayer times for a position**, calculated offline, with the methods and country
+  defaults of MAWAQIT.
 - **Generated from the OpenAPI description of the API**, so the methods and
   models follow it exactly.
 
@@ -118,6 +121,52 @@ They handle what the raw calendar leaves to you:
 gives the next iqama rather than the next adhan, and `prayer` the next time of one
 prayer, like `"maghrib"` for iftar or `"jumua"` for the next Friday. Every function takes a `timezone=`, to avoid
 loading the time zone of the mosque, like in Home Assistant.
+
+### Prayer times for a position
+
+For a place without a mosque, `calculate_prayer_times()` calculates the prayer
+times of a year from a position. It calls no API: it works offline. The result has
+the shape of `client.mosques.prayer_times()`, so `prayer_day()`, `next_prayer()`,
+`night()` and `hijri.today()` read it like the times of a mosque:
+
+```python
+from dataclasses import replace
+
+from mawaqit.prayer_times import (
+    CalculationPosition,
+    calculate_prayer_times,
+    calculation_method_name,
+    default_calculation_settings,
+    next_prayer,
+    prayer_day,
+)
+
+settings = default_calculation_settings("FR")  # The method of the country, Shafi'i Asr.
+times = calculate_prayer_times(
+    CalculationPosition(48.85, 2.35, "Europe/Paris"),
+    replace(settings, madhab="hanafi"),
+)
+
+prayer_day(times).fajr.time  # "06:42" on 26 November, in the time zone of the position
+next_prayer(times)
+calculation_method_name(settings.method, "fr")  # "Fajr et Isha à 15°"
+```
+
+| Setting | Values |
+| --- | --- |
+| `method` | A method of `CALCULATION_METHODS`, like `angle_15`, or `custom` with `fajr_angle` and `isha_angle` |
+| `madhab` | `shafi` or `hanafi`, for Asr |
+| `high_latitude_rule` | `twilight_angle`, `middle_of_the_night` or `seventh_of_the_night`, for high latitudes |
+| `adjustments` | Whole minutes added to `fajr`, `shuruq`, `dhuhr`, `asr`, `maghrib` or `isha` |
+
+`default_calculation_settings(country_code)` gives the method of a country, 15° in
+France for example, the Hanafi Asr in Pakistan, India, Bangladesh and Afghanistan,
+and the `twilight_angle` rule. The astronomy is a port of
+[adhan-js](https://github.com/batoulapps/adhan-js), with Dhuhr a minute after the
+solar transit and every time rounded to the nearest minute: the same minutes as
+`calculatePrayerTimes()` of the TypeScript library. The third argument,
+`CalculationOptions(year=..., hijri_adjustment=..., jumua_at_dhuhr=...,
+imsak_minutes_before_fajr=...)`, is optional.
 
 ### Hijri date
 

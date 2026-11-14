@@ -133,4 +133,5 @@ exclude_also = ["if TYPE_CHECKING:", "@overload", "raise NotImplementedError"]
 [tool.codespell]
 # Real API responses, in French among others.
 skip = "./tests/examples,./tests/data,./uv.lock,./.venv"
-ignore-words-list = "hass"
+# hass: Home Assistant. affaires: French, in the names of the calculation methods.
+ignore-words-list = "hass,affaires"
