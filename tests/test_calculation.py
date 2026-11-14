@@ -649,13 +649,16 @@ class TestMethods:
 
 
 REFERENCES = sorted(DATA.glob("*.json"))
+PRAYERS = ["fajr", "shuruq", "dhuhr", "asr", "maghrib", "isha"]
 
 
-# The times of the MAWAQIT app, recorded with the same settings: see the README there.
+def test_the_times_of_the_mawaqit_app_are_recorded() -> None:
+    assert REFERENCES
+
+
+# The times of the MAWAQIT mobile app with the same settings: see the README there.
 @pytest.mark.parametrize(
-    "path",
-    [pytest.param(path, id=path.name) for path in REFERENCES]
-    or [pytest.param(None, marks=pytest.mark.skip(reason="No reference times yet"))],
+    "path", [pytest.param(path, id=path.name) for path in REFERENCES]
 )
 def test_the_times_of_the_mawaqit_app(path: Path) -> None:
     reference = json.loads(path.read_text(encoding="utf-8"))
@@ -672,4 +675,8 @@ def test_the_times_of_the_mawaqit_app(path: Path) -> None:
         # Dhuhr one minute later than recorded, as mawaqit/mawaqit-js#16 decided.
         fajr, shuruq, dhuhr, *rest = recorded
         later = datetime.strptime(dhuhr, "%H:%M") + timedelta(minutes=1)
-        assert row(years[year], day) == [fajr, shuruq, f"{later:%H:%M}", *rest], day
+        expected = [fajr, shuruq, f"{later:%H:%M}", *rest]
+        # The minutes where mawaqit-js keeps the time of adhan-js: see the README.
+        for prayer, time in reference.get("differences", {}).get(day, {}).items():
+            expected[PRAYERS.index(prayer)] = time
+        assert row(years[year], day) == expected, day
