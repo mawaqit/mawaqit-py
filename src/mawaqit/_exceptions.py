@@ -13,6 +13,7 @@ __all__ = [
     "APIResponseValidationError",
     "APIStatusError",
     "APITimeoutError",
+    "AccountDisabledError",
     "AuthenticationError",
     "BadRequestError",
     "InternalServerError",
@@ -109,6 +110,14 @@ class AuthenticationError(APIStatusError):
     """The API token, or the email and password, are wrong (HTTP 401)."""
 
 
+class AccountDisabledError(AuthenticationError):
+    """The account is disabled, as until its email address is confirmed (HTTP 401).
+
+    Logging in still returns the API token of a disabled account, but the API
+    refuses it until the account is enabled.
+    """
+
+
 class PermissionDeniedError(APIStatusError):
     """The account used all its API calls, or the request was blocked (HTTP 403)."""
 
@@ -126,6 +135,7 @@ class InternalServerError(APIStatusError):
 
 
 _FIRST_SERVER_ERROR = 500
+_ACCOUNT_DISABLED = "form.error.account_disable"
 _STATUS_ERRORS: dict[int, type[APIStatusError]] = {
     400: BadRequestError,
     401: AuthenticationError,
@@ -149,4 +159,6 @@ def status_error(response: httpx.Response) -> APIStatusError:
     if response.status_code >= _FIRST_SERVER_ERROR:
         return InternalServerError(message, response, body=body)
     error = _STATUS_ERRORS.get(response.status_code, APIStatusError)
+    if error is AuthenticationError and message == _ACCOUNT_DISABLED:
+        error = AccountDisabledError
     return error(message, response, body=body)
