@@ -219,10 +219,12 @@ Every error inherits from `MawaqitError`:
 `body`. `APIStatusError` adds the `response` and its `status_code`.
 
 ```python
-from mawaqit import AuthenticationError, MawaqitError
+from mawaqit import AccountDisabledError, AuthenticationError, MawaqitError
 
 try:
     prayer_times = await client.mosques.prayer_times(uuid)
+except AccountDisabledError:
+    ...  # Ask to confirm the email address of the account.
 except AuthenticationError:
     ...  # Ask for a new token.
 except MawaqitError as err:
