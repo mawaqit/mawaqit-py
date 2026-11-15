@@ -207,6 +207,7 @@ Every error inherits from `MawaqitError`:
 | Error | When |
 | --- | --- |
 | `AuthenticationError` | The token is wrong (HTTP 401) |
+| `AccountDisabledError` | The account is disabled, as until its email is confirmed (HTTP 401) |
 | `PermissionDeniedError` | The account used all its API calls, or the request was blocked (HTTP 403) |
 | `NotFoundError` | No mosque has this UUID (HTTP 404) |
 | `RateLimitError`, `BadRequestError`, `InternalServerError` | HTTP 429, 400, 500 and above |
@@ -218,10 +219,12 @@ Every error inherits from `MawaqitError`:
 `body`. `APIStatusError` adds the `response` and its `status_code`.
 
 ```python
-from mawaqit import AuthenticationError, MawaqitError
+from mawaqit import AccountDisabledError, AuthenticationError, MawaqitError
 
 try:
     prayer_times = await client.mosques.prayer_times(uuid)
+except AccountDisabledError:
+    ...  # Ask to confirm the email address of the account.
 except AuthenticationError:
     ...  # Ask for a new token.
 except MawaqitError as err:

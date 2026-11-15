@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from mawaqit import (
+    AccountDisabledError,
     APIConnectionError,
     APIError,
     APIResponseValidationError,
@@ -64,6 +65,18 @@ async def test_status_errors(
     assert caught.value.request.url.path == f"/api{PRAYER_TIMES}"
 
 
+async def test_disabled_account(api: respx.MockRouter, client: Client) -> None:
+    body = {"message": "form.error.account_disable"}
+    api.get(PRAYER_TIMES).respond(401, json=body)
+
+    with pytest.raises(AccountDisabledError) as caught:
+        await resolve(client.mosques.prayer_times(UUID))
+
+    assert caught.value.message == "form.error.account_disable"
+    assert caught.value.status_code == 401
+    assert caught.value.body == body
+
+
 async def test_error_with_an_html_page(api: respx.MockRouter, client: Client) -> None:
     api.get(PRAYER_TIMES).respond(401, html="<p>error401</p>")
 
@@ -113,6 +126,7 @@ def test_error_hierarchy() -> None:
         RateLimitError,
     ):
         assert issubclass(error, APIStatusError)
+    assert issubclass(AccountDisabledError, AuthenticationError)
     assert issubclass(APITimeoutError, APIConnectionError)
     for base in (APIStatusError, APIConnectionError, APIResponseValidationError):
         assert issubclass(base, APIError)
