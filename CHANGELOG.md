@@ -3,6 +3,21 @@
 All notable changes to this library. It follows
 [Semantic Versioning](https://semver.org).
 
+## 2.8.0 - 2026-11-17
+
+### Changed
+
+- The default method of four countries, in `default_calculation_method()` and
+  `default_calculation_settings()`: the Muslim World League in the United Kingdom
+  and Spain, instead of `north_america`, whose 15° is for North America; and
+  `singapore` (20° and 18°, the angles of JAKIM) in Malaysia, instead of `karachi`.
+  Over 2027, Fajr is 19 to 37 minutes earlier in London and 15 to 27 in Madrid, Isha
+  12 to 24 minutes later in London and 10 to 17 in Madrid, and Fajr 8 to 9 minutes
+  earlier in Kuala Lumpur.
+- `morocco` has a Fajr angle of 19°, that of the Moroccan Ministry of Habous and
+  Islamic Affairs, instead of 18°: Fajr is 4 to 7 minutes earlier in Casablanca.
+  The same minutes as mawaqit-js 1.7.0.
+
 ## 2.7.0 - 2026-11-14
 
 ### Added
