@@ -43,7 +43,7 @@ CALCULATION_METHODS: Mapping[CalculationMethod, CalculationMethodAngles] = (
             "muslims_of_france": _angles(12, 12),
             "angle_15": _angles(15, 15),
             "algeria": _angles(18, 17),
-            "morocco": _angles(18, 17),
+            "morocco": _angles(19, 17),
             "egypt": _angles(19.5, 17.5),
             "karachi": _angles(18, 18),
             "umm_al_qura": CalculationMethodAngles(18.5, None, 90),
@@ -66,7 +66,8 @@ every method, and any other minute is an adjustment of the settings. Umm al-Qura
 Qatar have a time for Isha instead of an angle.
 """
 
-# The countries of each method. The other countries have the Muslim World League.
+# The countries of each method. The other countries have the Muslim World League, the
+# UK and Spain too: ISNA's 15° is for North America.
 _COUNTRIES: tuple[tuple[CalculationMethod, str], ...] = (
     ("angle_15", "FR"),
     ("algeria", "DZ"),
@@ -78,9 +79,9 @@ _COUNTRIES: tuple[tuple[CalculationMethod, str], ...] = (
         "LS LY MG ML MR MU MW MZ NA NE NG RW SC SD SL SN SO SS ST SZ TD TG TZ UG ZA ZM "
         "ZW",
     ),
-    ("north_america", "CA US GB ES"),
-    ("karachi", "PK IN BD AF TN OM JO MY"),
-    ("singapore", "SG ID"),
+    ("north_america", "CA US"),
+    ("karachi", "PK IN BD AF TN OM JO"),
+    ("singapore", "SG ID MY"),
     ("gulf", "AE"),
     ("kuwait", "KW"),
     ("qatar", "QA"),

@@ -6,7 +6,7 @@ times.
 ## The times of mawaqit-js
 
 `mawaqit-js/mawaqit-js.json` holds the times of `calculatePrayerTimes()` of
-[mawaqit-js](https://github.com/mawaqit/mawaqit-js) 1.5.0, the TypeScript twin of
+[mawaqit-js](https://github.com/mawaqit/mawaqit-js) 1.7.0, the TypeScript twin of
 this library, whose own tests check it against adhan-js. Python must give the same
 minutes on every day of it: random positions from pole to pole, in the time zone of
 their longitude or in a real one, from the year 1000 to 9999, with every method,
@@ -19,12 +19,12 @@ and the default settings of the countries.
 mawaqit-js, run it with Node.js where `@mawaqit/sdk` is installed:
 
 ```sh
-cd "$(mktemp -d)" && npm install @mawaqit/sdk@1.5.0
+cd "$(mktemp -d)" && npm install @mawaqit/sdk@1.7.0
 node --input-type=module < "$OLDPWD/tests/data/calculation/mawaqit-js/generate.mjs" \
   > "$OLDPWD/tests/data/calculation/mawaqit-js/mawaqit-js.json"
 ```
 
-The test expects version 1.5.0: change it with the version installed.
+The test expects version 1.7.0: change it with the version installed.
 
 ## Reference times of the MAWAQIT app
 
@@ -78,4 +78,14 @@ Two settings are left out:
   methods define it, where the app uses an angle of 18°. Makkah is recorded with
   the app's angles, as `custom`.
 - `morocco`: Morocco went back to UTC on 2026-09-20, and a system with older time
-  zone data shows its times an hour off. The method has the angles of `algeria`.
+  zone data shows its times an hour off. Its Fajr angle is 19° since 2.8.0, where the
+  app has 18°.
+
+Each file sets its method, so `default_calculation_settings()` does not change it.
+Since 2.8.0, the default of four countries is not the app's: the Muslim World League
+in the United Kingdom and Spain, where the app has `north_america`; `singapore` in
+Malaysia, where the app has `karachi`; and `morocco` with Fajr at 19°. A place there,
+with the defaults, gets other times than in the app. Over 2027: Fajr 19 to 37 minutes
+earlier and Isha 12 to 24 minutes later in London, Fajr 15 to 27 minutes earlier and
+Isha 10 to 17 minutes later in Madrid, Fajr 8 to 9 minutes earlier in Kuala Lumpur
+and 4 to 7 minutes earlier in Casablanca.

@@ -24,8 +24,8 @@ the API.
   error.
 - **Helpers** for the prayers of a day, the next prayer and the Hijri date, which
   handle iqama offsets, Imsak, Jumu'a and daylight saving time.
-- **Prayer times for a position**, calculated offline, with the methods and country
-  defaults of MAWAQIT.
+- **Prayer times for a position**, calculated offline, with the methods of MAWAQIT
+  and a default method per country.
 - **Generated from the OpenAPI description of the API**, so the methods and
   models follow it exactly.
 

@@ -120,7 +120,7 @@ class TestSameAsMawaqitJs:
                         (json.dumps(case["position"]), day, expected, actual)
                     )
 
-        assert self.FIXTURE["version"] == "1.5.0"
+        assert self.FIXTURE["version"] == "1.7.0"
         assert compared == self.FIXTURE["rows"] > 5000
         assert mismatches[:3] == []
 
@@ -581,10 +581,14 @@ class TestMethods:
             ("SA", "umm_al_qura"),
             ("EG", "egypt"),
             ("SN", "egypt"),
-            ("GB", "north_america"),
+            ("US", "north_america"),
+            ("CA", "north_america"),
+            ("GB", "muslim_world_league"),
+            ("ES", "muslim_world_league"),
             ("PK", "karachi"),
-            ("MY", "karachi"),
+            ("TN", "karachi"),
             ("ID", "singapore"),
+            ("MY", "singapore"),
             ("AE", "gulf"),
             ("KW", "kuwait"),
             ("QA", "qatar"),
@@ -607,7 +611,7 @@ class TestMethods:
             ("IN", "karachi", "hanafi"),
             ("BD", "karachi", "hanafi"),
             ("AF", "karachi", "hanafi"),
-            ("MY", "karachi", "shafi"),
+            ("TN", "karachi", "shafi"),
             (None, "muslim_world_league", "shafi"),
         ],
     )
